@@ -2,17 +2,21 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
 	"git.astuart.co/andrew/apis"
 	"git.astuart.co/andrew/nntp"
+	"git.astuart.co/andrew/yenc"
 )
 
 var geek *apis.Client
@@ -44,7 +48,7 @@ func init() {
 }
 
 func main() {
-	q := "test"
+	q := "pdf"
 
 	if len(os.Args) > 1 && os.Args[1] != "" {
 		q = os.Args[1]
@@ -79,55 +83,94 @@ func main() {
 	d.Username = data.Usenet.Username
 	d.Password = data.Usenet.Pass
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(nz.Files))
+	d.JoinGroup(nz.Files[0].Groups[0])
+
+	partRe := regexp.MustCompile(`\((\d+?)\)/\((\d+?)\)`)
+
+	files := &sync.WaitGroup{}
+	files.Add(len(nz.Files))
 
 	for n := range nz.Files {
-		go func(n int) {
-			defer wg.Done()
-			file := nz.Files[n]
+		file := nz.Files[n]
 
-			fmt.Printf("%s\n", file.Subject)
+		dir := fmt.Sprintf("/home/andrew/test/%s", q)
 
-			err = d.JoinGroup(file.Groups[0])
+		nameParts := strings.Split(file.Subject, "\"")
+		fName := strings.Replace(nameParts[1], "/", "-", -1)
 
-			if err != nil {
-				return
-			}
+		fName = fmt.Sprintf("%s/%s", dir, fName)
 
-			dir := fmt.Sprintf("/home/andrew/test/%s", q)
+		os.MkdirAll(dir, 0775)
 
-			nameParts := strings.Split(file.Subject, "\"")
-			fName := strings.Replace(nameParts[1], "/", "-", -1)
+		toFile, err := os.Create(filepath.Clean(fName))
 
-			fName = fmt.Sprintf("%s/%s", dir, fName)
+		if err != nil {
+			files.Done()
+			fmt.Printf("error creating file %s: %v\n", fName, err)
+			return
+		}
 
-			os.MkdirAll(dir, 0775)
+		segs := sync.WaitGroup{}
+		segs.Add(len(file.Segments))
 
-			toFile, err := os.Create(filepath.Clean(fName))
+		var fSegments = make([]*bytes.Buffer, len(file.Segments))
 
-			if err != nil {
-				fmt.Printf("error creating file %s: %v\n", fName, err)
-				return
-			}
-
-			for i := range file.Segments {
+		for i := range file.Segments {
+			go func(i int) {
 				seg := file.Segments[i]
 				art, err := d.GetArticle(seg.Id)
+
 				if err != nil {
-					break
+					fmt.Println(fmt.Errorf("error getting file: %v", err))
+					segs.Done()
+					return
 				}
 
-				aBuf := bufio.NewReader(art.Body)
+				aBuf := bufio.NewReader(yenc.NewReader(art.Body))
 
-				_, err = aBuf.WriteTo(toFile)
+				sub := art.Headers["Subject"]
+				fmt.Println(sub)
+
+				pNums := partRe.FindAllString(sub, -1)
+
+				segNum := 0
+				if len(pNums) > 2 {
+					segNum, err = strconv.Atoi(string(pNums[1]))
+
+					if err != nil {
+						fmt.Println(err)
+						segNum = i
+					} else {
+						segNum -= 1
+					}
+				} else {
+					segNum = i
+				}
+
+				if fSegments[segNum] == nil {
+					fSegments[segNum] = &bytes.Buffer{}
+				}
+
+				_, err = aBuf.WriteTo(fSegments[segNum])
 
 				if err != nil {
+					segs.Done()
 					log.Fatal(fmt.Errorf("error getting article: %v", err))
 				}
+				segs.Done()
+			}(i)
+		}
+
+		go func() {
+			segs.Wait()
+
+			for _, segBuf := range fSegments {
+				aBuf := bufio.NewReader(segBuf)
+				aBuf.WriteTo(toFile)
 			}
-		}(n)
+			files.Done()
+		}()
 	}
 
-	wg.Wait()
+	files.Wait()
 }
