@@ -23,12 +23,13 @@ var data = struct {
 		ApiKey, Url string
 	}
 	Usenet struct {
-		Username, Pass string
+		Server, Username, Pass string
+		Port, Connections      int
 	}
 }{}
 
 func init() {
-	file, err := os.Open("./creds.json")
+	file, err := os.Open("/home/andrew/creds.json")
 
 	if err != nil {
 		log.Fatal(err)
@@ -77,7 +78,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	d := nntp.NewClient("news.usenetserver.com", 119, 10)
+	d := nntp.NewClient(data.Usenet.Server, data.Usenet.Port, data.Usenet.Connections)
 	d.Username = data.Usenet.Username
 	d.Password = data.Usenet.Pass
 
