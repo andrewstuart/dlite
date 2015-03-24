@@ -13,6 +13,7 @@ import (
 
 	"git.astuart.co/andrew/apis"
 	"git.astuart.co/andrew/nntp"
+	"git.astuart.co/andrew/yenc"
 )
 
 var geek *apis.Client
@@ -57,6 +58,7 @@ func main() {
 	})
 
 	if err != nil {
+		fmt.Println("here")
 		log.Fatal(err)
 	}
 
@@ -71,10 +73,11 @@ func main() {
 	nz, err := m.Item[0].GetNzb()
 
 	if err != nil {
+		fmt.Println("here")
 		log.Fatal(err)
 	}
 
-	d := nntp.NewClient("news.usenetserver.com", 119, 5)
+	d := nntp.NewClient("news.usenetserver.com", 119, 10)
 	d.Username = data.Usenet.Username
 	d.Password = data.Usenet.Pass
 
@@ -84,13 +87,11 @@ func main() {
 	for n := range nz.Files {
 		go func(n int) {
 			defer wg.Done()
-
 			file := nz.Files[n]
 
 			err = d.JoinGroup(file.Groups[0])
 
 			if err != nil {
-				fmt.Printf("error joining group %s: %v\n", file.Groups[0], err)
 				return
 			}
 
@@ -117,15 +118,12 @@ func main() {
 					break
 				}
 
-				for k, v := range art.Headers {
-					fmt.Println(file.Subject, k, v)
-				}
-
-				aBuf := bufio.NewReader(art.Body)
+				aBuf := bufio.NewReader(yenc.NewReader(art.Body))
 
 				_, err = aBuf.WriteTo(toFile)
 
 				if err != nil {
+					fmt.Println("bufwrite?")
 					log.Fatal(err)
 				}
 			}
