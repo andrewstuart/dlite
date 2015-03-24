@@ -13,7 +13,6 @@ import (
 
 	"git.astuart.co/andrew/apis"
 	"git.astuart.co/andrew/nntp"
-	"git.astuart.co/andrew/yenc"
 )
 
 var geek *apis.Client
@@ -36,18 +35,16 @@ func init() {
 	}
 
 	dec := json.NewDecoder(file)
-
 	dec.Decode(&data)
 
 	geek = apis.NewClient(data.Geek.Url)
-
 	geek.DefaultQuery(apis.Query{
 		"apikey": data.Geek.ApiKey,
 	})
 }
 
 func main() {
-	q := "muppets"
+	q := "test"
 
 	if len(os.Args) > 1 && os.Args[1] != "" {
 		q = os.Args[1]
@@ -90,6 +87,8 @@ func main() {
 			defer wg.Done()
 			file := nz.Files[n]
 
+			fmt.Printf("%s\n", file.Subject)
+
 			err = d.JoinGroup(file.Groups[0])
 
 			if err != nil {
@@ -119,13 +118,12 @@ func main() {
 					break
 				}
 
-				aBuf := bufio.NewReader(yenc.NewReader(art.Body))
+				aBuf := bufio.NewReader(art.Body)
 
 				_, err = aBuf.WriteTo(toFile)
 
 				if err != nil {
-					fmt.Println("bufwrite?")
-					log.Fatal(err)
+					log.Fatal(fmt.Errorf("error getting article: %v", err))
 				}
 			}
 		}(n)
