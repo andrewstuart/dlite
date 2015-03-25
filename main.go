@@ -1,15 +1,15 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 
 	"git.astuart.co/andrew/apis"
 	"git.astuart.co/andrew/nntp"
@@ -78,59 +78,86 @@ func main() {
 	d.Username = data.Usenet.Username
 	d.Password = data.Usenet.Pass
 
-	err = d.JoinGroup(nz.Files[0].Groups[0])
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	files := &sync.WaitGroup{}
+	files.Add(len(nz.Files))
+
 	for n := range nz.Files {
 		file := nz.Files[n]
-
-		dir := fmt.Sprintf("/home/andrew/test/%s", q)
-
-		nameParts := strings.Split(file.Subject, "\"")
-		fName := strings.Replace(nameParts[1], "/", "-", -1)
-
-		fName = fmt.Sprintf("%s/%s", dir, fName)
-
-		os.MkdirAll(dir, 0775)
-
-		toFile, err := os.Create(filepath.Clean(fName))
-
+		err = d.JoinGroup(file.Groups[0])
 		if err != nil {
-			log.Fatalf("error creating file %s: %v\n", fName, err)
+			log.Fatalf("Error joining group: %v", err)
 		}
 
-		for i := range file.Segments {
-			seg := file.Segments[i]
-			art, err := d.GetArticle(seg.Id)
+		fileSegs := &sync.WaitGroup{}
+		fileSegs.Add(len(file.Segments))
+
+		fileBufs := make([]*bytes.Buffer, len(file.Segments))
+
+		go func() {
+			fileSegs.Wait()
+
+			dir := fmt.Sprintf("/home/andrew/test/%s", q)
+
+			nameParts := strings.Split(file.Subject, "\"")
+			fName := strings.Replace(nameParts[1], "/", "-", -1)
+
+			fName = fmt.Sprintf("%s/%s", dir, fName)
+
+			os.MkdirAll(dir, 0775)
 
 			if err != nil {
-				fmt.Println(fmt.Errorf("error getting file: %v", err))
-				return
+				log.Fatal(err)
 			}
 
-			var r io.Reader
+			toFile, err := os.Create(fName)
 
-			if strings.Contains(file.Subject, "yEnc") {
-				r = yenc.NewReader(art.Body)
-			} else {
-				r = art.Body
+			if err != nil {
+				log.Fatalf("error creating file %s: %v\n", fName, err)
 			}
 
-			aBuf := bufio.NewReader(r)
+			for i := range fileBufs {
+				io.Copy(toFile, fileBufs[i])
+			}
 
-			_, err = aBuf.WriteTo(toFile)
+			files.Done()
+		}()
 
-			if err != nil && err != yenc.CRCError {
-				switch err {
-				case yenc.CRCError:
-					fmt.Println("CRC Error")
-				default:
-					log.Fatal(fmt.Errorf("error getting article: %v", err))
+		for i := range file.Segments {
+			fileBufs[i] = &bytes.Buffer{}
+
+			go func(i int) {
+				seg := file.Segments[i]
+				art, err := d.GetArticle(seg.Id)
+
+				if err != nil {
+					log.Printf("error getting file: %v", err)
+					fileSegs.Done()
+					return
 				}
-			}
+
+				var r io.Reader
+
+				if strings.Contains(file.Subject, "yEnc") {
+					r = yenc.NewReader(art.Body)
+				} else {
+					r = art.Body
+				}
+
+				_, err = io.Copy(fileBufs[i], r)
+
+				if err != nil {
+					log.Printf("There was an error: %v\n", err)
+				}
+
+				fileSegs.Done()
+			}(i)
 		}
+
 	}
+
+	files.Wait()
 }
