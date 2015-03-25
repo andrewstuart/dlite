@@ -2,17 +2,14 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
-	"sync"
 
 	"git.astuart.co/andrew/apis"
 	"git.astuart.co/andrew/nntp"
@@ -60,7 +57,6 @@ func main() {
 	})
 
 	if err != nil {
-		fmt.Println("here")
 		log.Fatal(err)
 	}
 
@@ -75,7 +71,6 @@ func main() {
 	nz, err := m.Item[0].GetNzb()
 
 	if err != nil {
-		fmt.Println("here")
 		log.Fatal(err)
 	}
 
@@ -83,12 +78,11 @@ func main() {
 	d.Username = data.Usenet.Username
 	d.Password = data.Usenet.Pass
 
-	d.JoinGroup(nz.Files[0].Groups[0])
+	err = d.JoinGroup(nz.Files[0].Groups[0])
 
-	partRe := regexp.MustCompile(`\((\d+?)\)/\((\d+?)\)`)
-
-	files := &sync.WaitGroup{}
-	files.Add(len(nz.Files))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for n := range nz.Files {
 		file := nz.Files[n]
@@ -105,72 +99,38 @@ func main() {
 		toFile, err := os.Create(filepath.Clean(fName))
 
 		if err != nil {
-			files.Done()
-			fmt.Printf("error creating file %s: %v\n", fName, err)
-			return
+			log.Fatalf("error creating file %s: %v\n", fName, err)
 		}
-
-		segs := sync.WaitGroup{}
-		segs.Add(len(file.Segments))
-
-		var fSegments = make([]*bytes.Buffer, len(file.Segments))
 
 		for i := range file.Segments {
-			go func(i int) {
-				seg := file.Segments[i]
-				art, err := d.GetArticle(seg.Id)
+			seg := file.Segments[i]
+			art, err := d.GetArticle(seg.Id)
 
-				if err != nil {
-					fmt.Println(fmt.Errorf("error getting file: %v", err))
-					segs.Done()
-					return
-				}
+			if err != nil {
+				fmt.Println(fmt.Errorf("error getting file: %v", err))
+				return
+			}
 
-				aBuf := bufio.NewReader(yenc.NewReader(art.Body))
+			var r io.Reader
 
-				sub := art.Headers["Subject"]
-				fmt.Println(sub)
+			if strings.Contains(file.Subject, "yEnc") {
+				r = yenc.NewReader(art.Body)
+			} else {
+				r = art.Body
+			}
 
-				pNums := partRe.FindAllString(sub, -1)
+			aBuf := bufio.NewReader(r)
 
-				segNum := 0
-				if len(pNums) > 2 {
-					segNum, err = strconv.Atoi(string(pNums[1]))
+			_, err = aBuf.WriteTo(toFile)
 
-					if err != nil {
-						fmt.Println(err)
-						segNum = i
-					} else {
-						segNum -= 1
-					}
-				} else {
-					segNum = i
-				}
-
-				if fSegments[segNum] == nil {
-					fSegments[segNum] = &bytes.Buffer{}
-				}
-
-				_, err = aBuf.WriteTo(fSegments[segNum])
-
-				if err != nil {
-					segs.Done()
+			if err != nil && err != yenc.CRCError {
+				switch err {
+				case yenc.CRCError:
+					fmt.Println("CRC Error")
+				default:
 					log.Fatal(fmt.Errorf("error getting article: %v", err))
 				}
-				segs.Done()
-			}(i)
-		}
-
-		go func() {
-			segs.Wait()
-
-			for _, segBuf := range fSegments {
-				aBuf := bufio.NewReader(segBuf)
-				aBuf.WriteTo(toFile)
 			}
-			files.Done()
-		}()
+		}
 	}
-
-	files.Wait()
 }
