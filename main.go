@@ -49,7 +49,7 @@ func init() {
 }
 
 func main() {
-	q := "pdf"
+	q := "fart"
 
 	if len(os.Args) > 1 && os.Args[1] != "" {
 		q = os.Args[1]
