@@ -1,22 +1,21 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"strings"
-	"sync"
+	"strconv"
+	"text/tabwriter"
 
 	"git.astuart.co/andrew/apis"
 	"git.astuart.co/andrew/nntp"
-	"git.astuart.co/andrew/yenc"
 )
 
 var geek *apis.Client
+
+var use *nntp.Client
 
 var data = struct {
 	Geek struct {
@@ -42,6 +41,11 @@ func init() {
 	geek.DefaultQuery(apis.Query{
 		"apikey": data.Geek.ApiKey,
 	})
+
+	use = nntp.NewClient(data.Usenet.Server, data.Usenet.Port, data.Usenet.Connections)
+	use.Username = data.Usenet.Username
+	use.Password = data.Usenet.Pass
+
 }
 
 func main() {
@@ -68,96 +72,44 @@ func main() {
 		log.Fatal(err)
 	}
 
-	nz, err := m.Item[0].GetNzb()
+	if len(os.Args) > 2 {
+		n, _ := strconv.Atoi(os.Args[2])
 
-	if err != nil {
-		log.Fatal(err)
-	}
+		n--
 
-	d := nntp.NewClient(data.Usenet.Server, data.Usenet.Port, data.Usenet.Connections)
-	d.Username = data.Usenet.Username
-	d.Password = data.Usenet.Pass
+		if n < len(m.Item) {
+			log.Printf("Downloading item #%d: %s", n+1, m.Item[n].Title)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	files := &sync.WaitGroup{}
-	files.Add(len(nz.Files))
-
-	for n := range nz.Files {
-		file := nz.Files[n]
-		err = d.JoinGroup(file.Groups[0])
-		if err != nil {
-			log.Fatalf("Error joining group: %v", err)
-		}
-
-		fileSegs := &sync.WaitGroup{}
-		fileSegs.Add(len(file.Segments))
-
-		fileBufs := make([]*bytes.Buffer, len(file.Segments))
-
-		go func() {
-			fileSegs.Wait()
-
-			dir := fmt.Sprintf("/home/andrew/test/%s", q)
-
-			nameParts := strings.Split(file.Subject, "\"")
-			fName := strings.Replace(nameParts[1], "/", "-", -1)
-
-			fName = fmt.Sprintf("%s/%s", dir, fName)
-
-			os.MkdirAll(dir, 0775)
+			nz, err := m.Item[n].GetNzb()
 
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			toFile, err := os.Create(fName)
+			cwd, err := os.Getwd()
 
 			if err != nil {
-				log.Fatalf("error creating file %s: %v\n", fName, err)
+				cwd = "/home/andrew/test"
 			}
 
-			for i := range fileBufs {
-				io.Copy(toFile, fileBufs[i])
+			err = Download(nz, cwd)
+
+			if err != nil {
+				log.Fatal(err)
 			}
-
-			files.Done()
-		}()
-
-		for i := range file.Segments {
-			fileBufs[i] = &bytes.Buffer{}
-
-			go func(i int) {
-				seg := file.Segments[i]
-				art, err := d.GetArticle(seg.Id)
-
-				if err != nil {
-					log.Printf("error getting file: %v", err)
-					fileSegs.Done()
-					return
-				}
-
-				var r io.Reader
-
-				if strings.Contains(file.Subject, "yEnc") {
-					r = yenc.NewReader(art.Body)
-				} else {
-					r = art.Body
-				}
-
-				_, err = io.Copy(fileBufs[i], r)
-
-				if err != nil {
-					log.Printf("There was an error: %v\n", err)
-				}
-
-				fileSegs.Done()
-			}(i)
+		} else {
+			fmt.Println("Bad number.")
 		}
+	} else {
+		for i := range m.Item {
+			tw := new(tabwriter.Writer)
+			tw.Init(os.Stdout, 9, 8, 0, '\t', 0)
+			fmt.Fprintf(tw, "%d.\t%s\t%s\n", i+1, m.Item[i].Attrs["size"], m.Item[i].Title)
+			err := tw.Flush()
 
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
-
-	files.Wait()
 }
