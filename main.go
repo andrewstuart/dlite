@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -51,12 +52,14 @@ func init() {
 func main() {
 	q := "pdf"
 
-	if len(os.Args) > 1 && os.Args[1] != "" {
-		q = os.Args[1]
+	args := flag.Args()
+
+	if len(args) > 0 && os.Args[0] != "" {
+		q = args[0]
 	}
 
 	res, err := geek.Get("api", apis.Query{
-		"t": "search",
+		"t": *searchType,
 		"q": q,
 	})
 
@@ -72,8 +75,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if len(os.Args) > 2 {
-		n, _ := strconv.Atoi(os.Args[2])
+	if len(args) > 1 {
+		n, _ := strconv.Atoi(args[1])
 
 		n--
 
@@ -104,7 +107,14 @@ func main() {
 		for i := range m.Item {
 			tw := new(tabwriter.Writer)
 			tw.Init(os.Stdout, 9, 8, 0, '\t', 0)
-			fmt.Fprintf(tw, "%d.\t%s\t%s\n", i+1, m.Item[i].Attrs["size"], m.Item[i].Title)
+
+			size := m.Item[i].Attrs["size"]
+
+			is, _ := strconv.Atoi(size)
+
+			sizeMb := float64(is) / float64(1<<20)
+
+			fmt.Fprintf(tw, "%d.\t%.2f\t%s\n", i+1, sizeMb, m.Item[i].Title)
 			err := tw.Flush()
 
 			if err != nil {
