@@ -16,9 +16,18 @@ import (
 	"github.com/shazow/rateio"
 )
 
+const (
+	B int = 1 << (10 * iota)
+	KB
+	MB
+	GB
+)
+
 func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
+
+	lim := rateio.NewSimpleLimiter(1*MB, 1*time.Second)
 
 	var err error
 
@@ -79,7 +88,7 @@ func Download(nz *nzb.NZB, dir string) error {
 					return
 				}
 
-				r := rateio.NewReader(art.Body, rateio.NewSimpleLimiter(1<<20, 1*time.Second))
+				r := rateio.NewReader(art.Body, lim)
 
 				if strings.Contains(file.Subject, "yEnc") {
 					r = yenc.NewReader(r)
