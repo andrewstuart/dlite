@@ -9,9 +9,11 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"git.astuart.co/andrew/nzb"
 	"git.astuart.co/andrew/yenc"
+	"github.com/shazow/rateio"
 )
 
 func Download(nz *nzb.NZB, dir string) error {
@@ -77,12 +79,10 @@ func Download(nz *nzb.NZB, dir string) error {
 					return
 				}
 
-				var r io.Reader
+				r := rateio.NewReader(art.Body, rateio.NewSimpleLimiter(1<<20, 1*time.Second))
 
 				if strings.Contains(file.Subject, "yEnc") {
-					r = yenc.NewReader(art.Body)
-				} else {
-					r = art.Body
+					r = yenc.NewReader(r)
 				}
 
 				_, err = io.Copy(fileBufs[i], r)
