@@ -6,7 +6,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
+	"os/signal"
+	"runtime/pprof"
 	"strconv"
 	"text/tabwriter"
 
@@ -51,6 +55,23 @@ func init() {
 
 func main() {
 	q := "pdf"
+
+	go func() {
+		http.ListenAndServe(":6006", nil)
+	}()
+
+	go func() {
+		sigKill := make(chan os.Signal)
+		signal.Notify(sigKill, os.Interrupt)
+		<-sigKill
+		profile, err := os.Create("/home/andrew/sab.heap")
+		if err == nil {
+			err = pprof.WriteHeapProfile(profile)
+			profile.Close()
+		}
+
+		os.Exit(0)
+	}()
 
 	args := flag.Args()
 

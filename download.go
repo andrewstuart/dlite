@@ -11,23 +11,17 @@ import (
 	"sync"
 	"time"
 
+	"git.astuart.co/andrew/limio"
 	"git.astuart.co/andrew/nzb"
 	"git.astuart.co/andrew/yenc"
-	"github.com/shazow/rateio"
-)
-
-const (
-	B int = 1 << (10 * iota)
-	KB
-	MB
-	GB
 )
 
 func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
 
-	lim := rateio.NewSimpleLimiter(1*MB, 1*time.Second)
+	limmer := limio.NewEqualLimiter()
+	limmer.Limit(500*limio.KB, time.Second)
 
 	var err error
 
@@ -88,7 +82,8 @@ func Download(nz *nzb.NZB, dir string) error {
 					return
 				}
 
-				r := rateio.NewReader(art.Body, lim)
+				lr := limmer.NewReader(art.Body)
+				r := io.Reader(lr)
 
 				if strings.Contains(file.Subject, "yEnc") {
 					r = yenc.NewReader(r)
