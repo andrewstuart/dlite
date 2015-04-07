@@ -9,9 +9,7 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
 
-	"git.astuart.co/andrew/limio"
 	"git.astuart.co/andrew/nzb"
 	"git.astuart.co/andrew/yenc"
 )
@@ -20,14 +18,10 @@ func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
 
-	limmer := limio.NewEqualLimiter()
-	limmer.Limit(500*limio.KB, time.Second)
-
 	var err error
 
 	for n := range nz.Files {
 		file := nz.Files[n]
-		err = use.JoinGroup(file.Groups[0])
 		if err != nil {
 			return fmt.Errorf("Error joining group: %v", err)
 		}
@@ -82,8 +76,7 @@ func Download(nz *nzb.NZB, dir string) error {
 					return
 				}
 
-				lr := limmer.NewReader(art.Body)
-				r := io.Reader(lr)
+				r := io.Reader(art.Body)
 
 				if strings.Contains(file.Subject, "yEnc") {
 					r = yenc.NewReader(r)
