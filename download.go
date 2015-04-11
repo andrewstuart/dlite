@@ -22,9 +22,6 @@ func Download(nz *nzb.NZB, dir string) error {
 
 	for n := range nz.Files {
 		file := nz.Files[n]
-		if err != nil {
-			return fmt.Errorf("Error joining group: %v", err)
-		}
 
 		fileSegs := &sync.WaitGroup{}
 		fileSegs.Add(len(file.Segments))
@@ -40,7 +37,7 @@ func Download(nz *nzb.NZB, dir string) error {
 
 			fName = path.Clean(fmt.Sprintf("%s/%s/%s", dir, nz.Meta["name"], fName))
 
-			os.MkdirAll(path.Dir(fName), 0775)
+			err := os.MkdirAll(path.Dir(fName), 0775)
 
 			if err != nil {
 				files.Done()
@@ -57,6 +54,10 @@ func Download(nz *nzb.NZB, dir string) error {
 
 			for i := range fileBufs {
 				_, err = io.Copy(toFile, fileBufs[i])
+
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			files.Done()
@@ -65,30 +66,36 @@ func Download(nz *nzb.NZB, dir string) error {
 		//Get from network
 		for i := range file.Segments {
 			fileBufs[i] = &bytes.Buffer{}
-
 			go func(i int) {
+				defer fileSegs.Done()
+
 				seg := file.Segments[i]
-				art, err := use.GetArticle(seg.Id)
+				art, err := use.GetArticle(file.Groups[0], seg.Id)
 
 				if err != nil {
 					log.Printf("error getting file: %v", err)
-					fileSegs.Done()
 					return
 				}
 
-				r := io.Reader(art.Body)
+				if art.Body == nil {
+					log.Printf("Error getting article: no body - %+v\n", art)
+					return
+				}
+
+				var r io.Reader = art.Body
+				defer art.Body.Close()
 
 				if strings.Contains(file.Subject, "yEnc") {
 					r = yenc.NewReader(r)
 				}
 
+				//TODO WHY ARE ALL THE YENC SEGMENT NUMBERS THE SAME
 				_, err = io.Copy(fileBufs[i], r)
+				fmt.Println(i)
 
 				if err != nil {
-					log.Printf("There was an error: %v\n", err)
+					log.Printf("There was an error reading the article body: %v\n", err)
 				}
-
-				fileSegs.Done()
 			}(i)
 		}
 	}

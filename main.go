@@ -46,7 +46,12 @@ func init() {
 	})
 
 	use = nntp.NewClient(data.Usenet.Server, data.Usenet.Port, data.Usenet.Connections)
+
 	use.Auth(data.Usenet.Username, data.Usenet.Pass)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
