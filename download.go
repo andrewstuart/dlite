@@ -100,8 +100,6 @@ func Download(nz *nzb.NZB, dir string) error {
 				if err != nil {
 					log.Printf("There was an error reading the article body: %v\n", err)
 				}
-
-				fmt.Println("done seg", seg.Id)
 			}(i)
 		}
 	}
