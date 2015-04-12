@@ -55,10 +55,17 @@ func init() {
 }
 
 func main() {
+	// f, _ := os.Create("cpuprofile")
+	// pprof.StartCPUProfile(f)
+	// defer func() {
+	// 	pprof.StopCPUProfile()
+	// 	f.Close()
+	// }()
+
 	q := "pdf"
 
 	go func() {
-		http.ListenAndServe(":6006", nil)
+		http.ListenAndServe(":6060", nil)
 	}()
 
 	args := flag.Args()

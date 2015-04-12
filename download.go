@@ -9,7 +9,9 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
+	"git.astuart.co/andrew/limio"
 	"git.astuart.co/andrew/nzb"
 	"git.astuart.co/andrew/yenc"
 )
@@ -89,13 +91,17 @@ func Download(nz *nzb.NZB, dir string) error {
 					r = yenc.NewReader(r)
 				}
 
-				//TODO WHY ARE ALL THE YENC SEGMENT NUMBERS THE SAME
-				_, err = io.Copy(fileBufs[i], r)
-				fmt.Println(i)
+				lr := limio.NewReader(r)
+				lr.Limit(150*limio.KB, time.Second)
+				defer lr.Close()
+
+				_, err = io.Copy(fileBufs[i], lr)
 
 				if err != nil {
 					log.Printf("There was an error reading the article body: %v\n", err)
 				}
+
+				fmt.Println("done seg", seg.Id)
 			}(i)
 		}
 	}
