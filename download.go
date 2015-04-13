@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"git.astuart.co/andrew/limio"
+	"git.astuart.co/andrew/metio"
 	"git.astuart.co/andrew/nzb"
 	"git.astuart.co/andrew/yenc"
 )
@@ -22,12 +23,6 @@ func Download(nz *nzb.NZB, dir string) error {
 	files.Add(len(nz.Files))
 
 	var err error
-
-	lmr := limio.NewLimitManager()
-
-	if downRate > 0 {
-		lmr.Limit(downRate, time.Second)
-	}
 
 	for n := range nz.Files {
 		file := nz.Files[n]
@@ -98,10 +93,32 @@ func Download(nz *nzb.NZB, dir string) error {
 					r = yenc.NewReader(r)
 				}
 
-				lr := limio.NewReader(r)
-				lmr.Manage(lr)
+				mr := metio.NewReader(r)
 
+				quit := make(chan bool)
+
+				go func() {
+					for {
+						select {
+						case <-time.After(time.Second):
+							n, _ := mr.Since(time.Now().Add(-time.Second))
+							meter <- n
+						case <-quit:
+							return
+						}
+					}
+				}()
+
+				lr := limio.NewReader(mr)
 				defer lr.Close()
+
+				if downRate > 0 {
+					done := lr.Limit(downRate/use.MaxConns, time.Second)
+					go func() {
+						<-done
+						quit <- true
+					}()
+				}
 
 				_, err = io.Copy(fileBufs[i], lr)
 
