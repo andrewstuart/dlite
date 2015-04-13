@@ -25,7 +25,7 @@ func TestResp(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	m := NewRespEnv()
+	m := &RespEnv{}
 	dec := xml.NewDecoder(res.Body)
 	err = dec.Decode(m)
 
