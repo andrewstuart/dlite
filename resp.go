@@ -33,9 +33,3 @@ type RespEnv struct {
 	XMLName xml.Name `xml:"rss"`
 	Item    []Item   `xml:"channel>item"`
 }
-
-func NewRespEnv() *RespEnv {
-	return &RespEnv{
-		Item: make([]Item, 0, 20),
-	}
-}

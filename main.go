@@ -87,7 +87,7 @@ func main() {
 	}
 
 	dec := xml.NewDecoder(res.Body)
-	m := NewRespEnv()
+	m := RespEnv{}
 	err = dec.Decode(&m)
 
 	if err != nil {
@@ -104,9 +104,13 @@ func main() {
 
 			nz, err := m.Item[n].GetNzb()
 
+			currnz <- nz
+
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			log.Printf("nz = %+v\n", nz)
 
 			cwd, err := os.Getwd()
 
@@ -120,7 +124,7 @@ func main() {
 				log.Fatal(err)
 			}
 		} else {
-			fmt.Println("Bad number.")
+			fmt.Printf("Bad number: %s.\n", os.Args[1])
 		}
 	} else {
 		for i := range m.Item {
