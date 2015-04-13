@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"os"
@@ -21,6 +22,12 @@ func Download(nz *nzb.NZB, dir string) error {
 	files.Add(len(nz.Files))
 
 	var err error
+
+	lmr := limio.NewLimitManager()
+
+	if downRate > 0 {
+		lmr.Limit(downRate, time.Second)
+	}
 
 	for n := range nz.Files {
 		file := nz.Files[n]
@@ -72,7 +79,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				defer fileSegs.Done()
 
 				seg := file.Segments[i]
-				art, err := use.GetArticle(file.Groups[0], seg.Id)
+				art, err := use.GetArticle(file.Groups[0], html.UnescapeString(seg.Id))
 
 				if err != nil {
 					log.Printf("error getting file: %v", err)
@@ -92,7 +99,8 @@ func Download(nz *nzb.NZB, dir string) error {
 				}
 
 				lr := limio.NewReader(r)
-				lr.Limit(150*limio.KB, time.Second)
+				lmr.Manage(lr)
+
 				defer lr.Close()
 
 				_, err = io.Copy(fileBufs[i], lr)

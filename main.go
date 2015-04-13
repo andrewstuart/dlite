@@ -9,6 +9,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"runtime"
 	"runtime/pprof"
 	"strconv"
 	"text/tabwriter"
@@ -56,6 +57,7 @@ func init() {
 }
 
 func main() {
+	runtime.GOMAXPROCS(8)
 	f, _ := os.Create("cpuprofile")
 	pprof.StartCPUProfile(f)
 	defer func() {
