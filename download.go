@@ -22,6 +22,9 @@ func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
 
+	var rar string
+	rootDir := path.Clean(fmt.Sprintf("%s/%s", dir, nz.Meta["name"]))
+
 	var err error
 
 	for n := range nz.Files {
@@ -36,10 +39,11 @@ func Download(nz *nzb.NZB, dir string) error {
 		go func() {
 			fileSegs.Wait()
 
-			nameParts := strings.Split(file.Subject, "\"")
-			fName := strings.Replace(nameParts[1], "/", "-", -1)
+			fName := path.Clean(fmt.Sprintf("%s/%s", rootDir, file.Name()))
 
-			fName = path.Clean(fmt.Sprintf("%s/%s/%s", dir, nz.Meta["name"], fName))
+			if IsRar(fName) {
+				rar = fName
+			}
 
 			err := os.MkdirAll(path.Dir(fName), 0775)
 
@@ -130,6 +134,10 @@ func Download(nz *nzb.NZB, dir string) error {
 	}
 
 	files.Wait()
+
+	if rar != "" {
+		err = Unrar(rar, rootDir)
+	}
 
 	return err
 }

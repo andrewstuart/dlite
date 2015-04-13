@@ -104,13 +104,13 @@ func main() {
 
 			nz, err := m.Item[n].GetNzb()
 
+			startMeter()
+
 			currnz <- nz
 
 			if err != nil {
 				log.Fatal(err)
 			}
-
-			log.Printf("nz = %+v\n", nz)
 
 			cwd, err := os.Getwd()
 

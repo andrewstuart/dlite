@@ -12,25 +12,31 @@ var currnz = make(chan *nzb.NZB)
 
 const mbfloat = float64(1 << 20)
 
-func init() {
+func startMeter() {
 	go func() {
-		size := 0
+		size := uint64(0)
+		rem := uint64(0)
+
 		tkr := time.NewTicker(time.Second)
 		tot := uint64(0)
 		for {
 			select {
 			case nz := <-currnz:
-				size = nz.Size()
+				rem = uint64(nz.Size())
+				size = rem
 			case n := <-meter:
 				tot += uint64(n)
 			case <-tkr.C:
+				rem -= tot
 				r := float64(tot) / mbfloat
-				t := float64(size) / float64(tot)
+				t := float64(rem) / float64(tot)
 
-				fmt.Printf("%f MB/s, %.2fs left\n", r, t)
+				s := float64(size) / mbfloat
+				rm := float64(rem) / mbfloat
+
+				fmt.Printf("%.2f MB/s, (%.1fMB/%.1fMB) %.2fs left\n", r, rm, s, t)
 				tot = uint64(0)
 			}
 		}
 	}()
-
 }
