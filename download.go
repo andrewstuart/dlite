@@ -22,12 +22,18 @@ func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
 
+	lmr := limio.NewLimitManager()
+	if downRate > 0 {
+		lmr.Limit(downRate, time.Second)
+	}
+
 	var rar string
 	rootDir := path.Clean(fmt.Sprintf("%s/%s", dir, nz.Meta["name"]))
 
 	var err error
 
 	for n := range nz.Files {
+		num := n
 		file := nz.Files[n]
 
 		fileSegs := &sync.WaitGroup{}
@@ -39,13 +45,19 @@ func Download(nz *nzb.NZB, dir string) error {
 		go func() {
 			fileSegs.Wait()
 
-			fName := path.Clean(fmt.Sprintf("%s/%s", rootDir, file.Name()))
+			name, err := file.Name()
+
+			if err != nil {
+				name = fmt.Sprintf("file-%d", num)
+			}
+
+			fName := path.Clean(fmt.Sprintf("%s/%s", rootDir, name))
 
 			if IsRar(fName) {
 				rar = fName
 			}
 
-			err := os.MkdirAll(path.Dir(fName), 0775)
+			err = os.MkdirAll(path.Dir(fName), 0775)
 
 			if err != nil {
 				files.Done()
@@ -114,15 +126,13 @@ func Download(nz *nzb.NZB, dir string) error {
 				}()
 
 				lr := limio.NewReader(mr)
-				defer lr.Close()
 
-				if downRate > 0 {
-					done := lr.Limit(downRate/use.MaxConns, time.Second)
-					go func() {
-						<-done
-						quit <- true
-					}()
-				}
+				lmr.Manage(lr)
+
+				defer func() {
+					lr.Close()
+					quit <- true
+				}()
 
 				_, err = io.Copy(fileBufs[i], lr)
 
