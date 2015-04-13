@@ -105,33 +105,34 @@ func Download(nz *nzb.NZB, dir string) error {
 				var r io.Reader = art.Body
 				defer art.Body.Close()
 
-				if strings.Contains(file.Subject, "yEnc") {
-					r = yenc.NewReader(r)
-				}
-
 				mr := metio.NewReader(r)
-
-				quit := make(chan bool)
+				closed := make(chan bool)
 
 				go func() {
 					for {
+						t := time.Now()
 						select {
 						case <-time.After(time.Second):
-							n, _ := mr.Since(time.Now().Add(-time.Second))
+							n, _ := mr.Since(t)
 							meter <- n
-						case <-quit:
+						case <-closed:
+							n, _ := mr.Since(t)
+							meter <- n
 							return
 						}
 					}
 				}()
 
-				lr := limio.NewReader(mr)
+				if strings.Contains(file.Subject, "yEnc") {
+					r = yenc.NewReader(mr)
+				}
 
+				lr := limio.NewReader(r)
 				lmr.Manage(lr)
 
 				defer func() {
 					lr.Close()
-					quit <- true
+					closed <- true
 				}()
 
 				_, err = io.Copy(fileBufs[i], lr)
