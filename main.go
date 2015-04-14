@@ -10,12 +10,12 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"runtime"
-	"runtime/pprof"
 	"strconv"
 	"text/tabwriter"
 
 	"git.astuart.co/andrew/apis"
 	"git.astuart.co/andrew/nntp"
+	"git.astuart.co/andrew/nzb"
 )
 
 var geek *apis.Client
@@ -45,99 +45,119 @@ func init() {
 	geek = apis.NewClient(data.Geek.Url)
 	geek.DefaultQuery(apis.Query{
 		"apikey": data.Geek.ApiKey,
+		"limit":  "200",
 	})
 
 	use = nntp.NewClient(data.Usenet.Server, data.Usenet.Port, data.Usenet.Connections)
-
 	use.Auth(data.Usenet.Username, data.Usenet.Pass)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func main() {
-	runtime.GOMAXPROCS(8)
-	f, _ := os.Create("cpuprofile")
-	pprof.StartCPUProfile(f)
-	defer func() {
-		pprof.StopCPUProfile()
-		f.Close()
-	}()
-
-	q := "pdf"
 
 	go func() {
 		http.ListenAndServe(":6060", nil)
 	}()
 
-	args := flag.Args()
+	runtime.GOMAXPROCS(8)
+}
 
+type Query struct {
+	T, Q string
+}
+
+func main() {
+	defer saveCache(localCache)
+
+	if *clr {
+		return
+	}
+
+	q := "pdf"
+
+	args := flag.Args()
 	if len(args) > 0 && os.Args[0] != "" {
 		q = args[0]
 	}
 
-	res, err := geek.Get("api", apis.Query{
-		"t": *searchType,
-		"q": q,
-	})
+	var is []Item
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	qy := Query{*t, q}
+	if cached, ok := localCache.Queries[qy]; ok && !*nc {
+		is = cached
+	} else {
+		res, err := geek.Get("api", apis.Query{
+			"t": *t,
+			"q": q,
+		})
 
-	dec := xml.NewDecoder(res.Body)
-	m := RespEnv{}
-	err = dec.Decode(&m)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	if err != nil {
-		log.Fatal(err)
+		dec := xml.NewDecoder(res.Body)
+		m := RespEnv{}
+		err = dec.Decode(&m)
+		if err != nil {
+			log.Fatal(err)
+		}
+		localCache.Queries[qy] = m.Item
+		is = m.Item
 	}
 
 	if len(args) > 1 {
 		n, _ := strconv.Atoi(args[1])
-
 		n--
 
-		if n < len(m.Item) {
-			log.Printf("Downloading item #%d: %s", n+1, m.Item[n].Title)
-
-			nz, err := m.Item[n].GetNzb()
+		if n < len(is) {
+			var nz *nzb.NZB
+			var err error
+			if cached, ok := localCache.Nzbs[is[n].Guid]; ok && !*nc {
+				nz = &cached
+			} else {
+				nz, err = is[n].GetNzb()
+				if err != nil {
+					log.Fatal(err)
+				}
+				localCache.Nzbs[is[n].Guid] = *nz
+			}
 
 			startMeter()
-
 			currnz <- nz
 
+			dlDir, err := os.Getwd()
+
+			if err != nil {
+				dlDir = "/home/andrew/test"
+			}
+
+			if sabDir := os.Getenv("SAB_DIR"); sabDir != "" {
+				dlDir = sabDir
+			}
+
+			err = Download(nz, fmt.Sprintf("%s/%s", dlDir, is[n].Title))
+
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			cwd, err := os.Getwd()
+			log.Printf("Downloaded item #%d: %s", n+1, is[n].Title)
 
-			if err != nil {
-				cwd = "/home/andrew/test"
-			}
-
-			err = Download(nz, cwd)
-
-			if err != nil {
-				log.Fatal(err)
-			}
 		} else {
 			fmt.Printf("Bad number: %s.\n", os.Args[1])
 		}
 	} else {
-		for i := range m.Item {
+		for i := range is {
 			tw := new(tabwriter.Writer)
 			tw.Init(os.Stdout, 9, 8, 0, '\t', 0)
 
-			size := m.Item[i].Attrs["size"]
+			size := is[i].Attrs["size"]
 
-			is, _ := strconv.Atoi(size)
+			iSize, _ := strconv.Atoi(size)
 
-			sizeMb := float64(is) / float64(1<<20)
+			sizeMb := float64(iSize) / float64(1<<20)
 
-			fmt.Fprintf(tw, "%d.\t%.2f\t%s\n", i+1, sizeMb, m.Item[i].Title)
+			fmt.Fprintf(tw, "%d.\t%.2f\t%s\n", i+1, sizeMb, is[i].Title)
 			err := tw.Flush()
 
 			if err != nil {

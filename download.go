@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"html"
 	"io"
@@ -28,7 +27,6 @@ func Download(nz *nzb.NZB, dir string) error {
 	}
 
 	var rar string
-	rootDir := path.Clean(fmt.Sprintf("%s/%s", dir, nz.Meta["name"]))
 
 	var err error
 
@@ -39,29 +37,29 @@ func Download(nz *nzb.NZB, dir string) error {
 		fileSegs := &sync.WaitGroup{}
 		fileSegs.Add(len(file.Segments))
 
-		fileBufs := make([]*bytes.Buffer, len(file.Segments))
+		fileBufs := make([]string, len(file.Segments))
+
+		name, err := file.Name()
+
+		if err != nil {
+			name = fmt.Sprintf("file-%d", num)
+		}
+
+		fName := path.Clean(fmt.Sprintf("%s/%s", dir, name))
+
+		err = os.MkdirAll(path.Dir(fName), 0775)
+		err = os.MkdirAll(path.Dir(fName)+"/temp", 0775)
+
+		if err != nil {
+			files.Done()
+		}
 
 		//Write to disk
 		go func() {
 			fileSegs.Wait()
 
-			name, err := file.Name()
-
-			if err != nil {
-				name = fmt.Sprintf("file-%d", num)
-			}
-
-			fName := path.Clean(fmt.Sprintf("%s/%s", rootDir, name))
-
 			if IsRar(fName) {
 				rar = fName
-			}
-
-			err = os.MkdirAll(path.Dir(fName), 0775)
-
-			if err != nil {
-				files.Done()
-				return
 			}
 
 			var toFile *os.File
@@ -73,7 +71,13 @@ func Download(nz *nzb.NZB, dir string) error {
 			}
 
 			for i := range fileBufs {
-				_, err = io.Copy(toFile, fileBufs[i])
+				f, err := os.Open(fileBufs[i])
+
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				_, err = io.Copy(toFile, f)
 
 				if err != nil {
 					log.Fatal(err)
@@ -85,11 +89,17 @@ func Download(nz *nzb.NZB, dir string) error {
 
 		//Get from network
 		for i := range file.Segments {
-			fileBufs[i] = &bytes.Buffer{}
 			go func(i int) {
 				defer fileSegs.Done()
-
 				seg := file.Segments[i]
+
+				tf := path.Clean(fmt.Sprintf("%s/temp/%s", dir, seg.Id))
+
+				if f, err := os.Stat(tf); err == nil && f.Size() == int64(seg.Bytes) {
+					fileBufs[i] = tf
+					return
+				}
+
 				art, err := use.GetArticle(file.Groups[0], html.UnescapeString(seg.Id))
 
 				if err != nil {
@@ -135,7 +145,14 @@ func Download(nz *nzb.NZB, dir string) error {
 					closed <- true
 				}()
 
-				_, err = io.Copy(fileBufs[i], lr)
+				f, err := os.Create(tf)
+
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				fileBufs[i] = tf
+				_, err = io.Copy(f, lr)
 
 				if err != nil {
 					log.Printf("There was an error reading the article body: %v\n", err)
@@ -147,7 +164,7 @@ func Download(nz *nzb.NZB, dir string) error {
 	files.Wait()
 
 	if rar != "" {
-		err = Unrar(rar, rootDir)
+		err = Unrar(rar, dir)
 	}
 
 	return err
