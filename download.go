@@ -26,9 +26,15 @@ func Download(nz *nzb.NZB, dir string) error {
 		lmr.Limit(downRate, time.Second)
 	}
 
-	var rar string
+	rar := make([]string, 0)
 
-	var err error
+	tempDir := dir + "/temp"
+
+	err := os.MkdirAll(tempDir, 0775)
+
+	if err != nil {
+		return err
+	}
 
 	for n := range nz.Files {
 		num := n
@@ -47,23 +53,17 @@ func Download(nz *nzb.NZB, dir string) error {
 
 		fName := path.Clean(fmt.Sprintf("%s/%s", dir, name))
 
-		err = os.MkdirAll(path.Dir(fName), 0775)
-		err = os.MkdirAll(path.Dir(fName)+"/temp", 0775)
-
-		if err != nil {
-			files.Done()
-		}
-
 		//Write to disk
 		go func() {
 			fileSegs.Wait()
 
 			if IsRar(fName) {
-				rar = fName
+				rar = append(rar, fName)
 			}
 
 			var toFile *os.File
 			toFile, err = os.Create(fName)
+			defer toFile.Close()
 
 			if err != nil {
 				files.Done()
@@ -72,6 +72,8 @@ func Download(nz *nzb.NZB, dir string) error {
 
 			for i := range fileBufs {
 				f, err := os.Open(fileBufs[i])
+				defer f.Close()
+				defer os.Remove(fileBufs[i])
 
 				if err != nil {
 					log.Fatal(err)
@@ -96,6 +98,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				tf := path.Clean(fmt.Sprintf("%s/temp/%s", dir, seg.Id))
 
 				if f, err := os.Stat(tf); err == nil && f.Size() == int64(seg.Bytes) {
+					meter <- seg.Bytes
 					fileBufs[i] = tf
 					return
 				}
@@ -163,9 +166,15 @@ func Download(nz *nzb.NZB, dir string) error {
 
 	files.Wait()
 
-	if rar != "" {
-		err = Unrar(rar, dir)
+	for _, fName := range rar {
+		rErr := Unrar(fName, dir)
+
+		if rErr == nil {
+			os.Remove(fName)
+		}
 	}
+
+	os.RemoveAll(tempDir)
 
 	return err
 }
