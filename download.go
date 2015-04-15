@@ -21,7 +21,7 @@ func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
 
-	lmr := limio.NewLimitManager()
+	lmr := limio.NewSimpleManager()
 	if downRate > 0 {
 		lmr.Limit(downRate, time.Second)
 	}
