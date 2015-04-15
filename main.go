@@ -14,11 +14,7 @@ import (
 
 func init() {
 	connectApis()
-
-	go func() {
-		http.ListenAndServe(":6060", nil)
-	}()
-
+	go http.ListenAndServe(":6060", nil)
 	runtime.GOMAXPROCS(8)
 }
 
