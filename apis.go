@@ -5,9 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/andrewstuart/goapis"
 	"github.com/andrewstuart/nntp"
-
-	"git.astuart.co/andrew/apis"
 )
 
 var geek *apis.Client

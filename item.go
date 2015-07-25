@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"git.astuart.co/andrew/apis"
-	"git.astuart.co/andrew/nzb"
+	"github.com/andrewstuart/go-nzb"
+	"github.com/andrewstuart/goapis"
 )
 
 type Item struct {

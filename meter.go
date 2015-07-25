@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.astuart.co/andrew/nzb"
+	"github.com/andrewstuart/go-nzb"
 )
 
 var meter = make(chan int)

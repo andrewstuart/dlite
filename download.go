@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"git.astuart.co/andrew/metio"
-	"git.astuart.co/andrew/nzb"
+	"github.com/andrewstuart/go-metio"
+	"github.com/andrewstuart/go-nzb"
 	"github.com/andrewstuart/limio"
 	"github.com/andrewstuart/yenc"
 )

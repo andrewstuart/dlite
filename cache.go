@@ -8,7 +8,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"git.astuart.co/andrew/nzb"
+	"github.com/andrewstuart/go-nzb"
 )
 
 const progName = "sab"

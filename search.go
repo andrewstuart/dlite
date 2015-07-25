@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/xml"
 
-	"git.astuart.co/andrew/apis"
-	"git.astuart.co/andrew/nzb"
+	"github.com/andrewstuart/go-nzb"
+	"github.com/andrewstuart/goapis"
 )
 
 func Search(t, q string) ([]Item, error) {
