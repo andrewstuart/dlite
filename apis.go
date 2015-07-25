@@ -38,8 +38,9 @@ func connectApis() {
 		"limit":  "200",
 	})
 
-	use = nntp.NewClient(data.Usenet.Server, data.Usenet.Port, data.Usenet.Connections)
-	use.Auth(data.Usenet.Username, data.Usenet.Pass)
+	use = nntp.NewClient(data.Usenet.Server, data.Usenet.Port)
+	use.SetMaxConns(10)
+	err = use.Auth(data.Usenet.Username, data.Usenet.Pass)
 
 	if err != nil {
 		log.Fatal(err)

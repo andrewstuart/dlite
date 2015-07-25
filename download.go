@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"git.astuart.co/andrew/limio"
 	"git.astuart.co/andrew/metio"
 	"git.astuart.co/andrew/nzb"
-	"git.astuart.co/andrew/yenc"
+	"github.com/andrewstuart/limio"
+	"github.com/andrewstuart/yenc"
 )
 
 func Download(nz *nzb.NZB, dir string) error {
@@ -23,7 +23,7 @@ func Download(nz *nzb.NZB, dir string) error {
 
 	lmr := limio.NewSimpleManager()
 	if downRate > 0 {
-		lmr.Limit(downRate, time.Second)
+		lmr.SimpleLimit(downRate, time.Second)
 	}
 
 	rar := make([]string, 0)
@@ -66,6 +66,7 @@ func Download(nz *nzb.NZB, dir string) error {
 			defer toFile.Close()
 
 			if err != nil {
+				log.Println("Couldn't create file.")
 				files.Done()
 				return
 			}
@@ -97,6 +98,8 @@ func Download(nz *nzb.NZB, dir string) error {
 
 				tf := path.Clean(fmt.Sprintf("%s/temp/%s", dir, seg.Id))
 
+				//Check to see if file segment has been previously downloaded completely
+				//That is, it exists and has the proper size.
 				if f, err := os.Stat(tf); err == nil && f.Size() == int64(seg.Bytes) {
 					meter <- seg.Bytes
 					fileBufs[i] = tf
@@ -144,6 +147,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				lmr.Manage(lr)
 
 				defer func() {
+					lmr.Unmanage(lr)
 					lr.Close()
 					closed <- true
 				}()

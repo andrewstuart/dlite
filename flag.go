@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"git.astuart.co/andrew/limio"
+	"github.com/andrewstuart/limio"
 )
 
 var t = flag.String("t", "movie", "the type of search to perform")
