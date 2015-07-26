@@ -109,12 +109,12 @@ func Download(nz *nzb.NZB, dir string) error {
 				art, err := use.GetArticle(file.Groups[0], html.UnescapeString(seg.Id))
 
 				if err != nil {
-					log.Printf("error getting file: %v", err)
+					log.Printf("error downloading file %s: %v\n", file.Subject, err)
 					return
 				}
 
 				if art.Body == nil {
-					log.Printf("Error getting article: no body - %+v\n", art)
+					log.Printf("error getting article: no body - %+v\n", art)
 					return
 				}
 

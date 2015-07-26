@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -61,14 +62,22 @@ func connectApis() {
 		"limit":  "200",
 	})
 
+	if config.Usenet.Server == "" {
+		log.Fatal("No server configured. Please provide a valid usenet server name.")
+	}
+	if config.Usenet.Port == 0 {
+		log.Fatal("No port configured. Please provide a valid usenet port.")
+	}
+
 	use = nntp.NewClient(config.Usenet.Server, config.Usenet.Port)
 	use.Tls = config.Usenet.Tls
 	use.SetMaxConns(config.Usenet.Connections)
+	use.SetTimeout(5 * time.Second)
 
 	err = use.Auth(config.Usenet.Username, config.Usenet.Password)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error authenticating:\n\t%v\n", err)
 	}
 
 	fmt.Printf("config = %+v\n", config)

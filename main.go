@@ -69,14 +69,14 @@ func main() {
 				log.Fatal(err)
 			}
 
-			startMeter()
-			currnz <- nz
-
 			dlDir, err := os.Getwd()
 
 			if sabDir := os.Getenv("SAB_DIR"); sabDir != "" {
 				dlDir = sabDir
 			}
+
+			startMeter()
+			currnz <- nz
 
 			err = Download(nz, fmt.Sprintf("%s/%s", dlDir, is[n].Title))
 
