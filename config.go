@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -79,6 +78,4 @@ func connectApis() {
 	if err != nil {
 		log.Fatalf("Error authenticating:\n\t%v\n", err)
 	}
-
-	fmt.Printf("config = %+v\n", config)
 }
