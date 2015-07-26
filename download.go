@@ -13,7 +13,6 @@ import (
 
 	"github.com/andrewstuart/go-metio"
 	"github.com/andrewstuart/go-nzb"
-	"github.com/andrewstuart/limio"
 	"github.com/andrewstuart/yenc"
 )
 
@@ -23,10 +22,10 @@ func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
 
-	lmr := limio.NewSimpleManager()
-	if downRate > 0 {
-		lmr.SimpleLimit(downRate, time.Second)
-	}
+	// lmr := limio.NewSimpleManager()
+	// if downRate > 0 {
+	// 	lmr.SimpleLimit(downRate, time.Second)
+	// }
 
 	var rarFiles []string
 
@@ -125,6 +124,9 @@ func Download(nz *nzb.NZB, dir string) error {
 
 				mr := metio.NewReader(r)
 				closed := make(chan bool)
+				defer func() {
+					closed <- true
+				}()
 
 				go func() {
 					for {
@@ -145,13 +147,12 @@ func Download(nz *nzb.NZB, dir string) error {
 					r = yenc.NewReader(mr)
 				}
 
-				lr := limio.NewReader(r)
-				lmr.Manage(lr)
+				// lr := limio.NewReader(r)
+				// lmr.Manage(lr)
 
-				defer func() {
-					lr.Close()
-					closed <- true
-				}()
+				// defer func() {
+				// 	lr.Close()
+				// }()
 
 				f, err := os.Create(tf)
 
@@ -160,7 +161,8 @@ func Download(nz *nzb.NZB, dir string) error {
 				}
 
 				fileBufs[i] = tf
-				_, err = io.Copy(f, lr)
+				_, err = io.Copy(f, mr)
+				// _, err = io.Copy(f, lr)
 
 				if err != nil {
 					log.Printf("There was an error reading the article body: %v\n", err)

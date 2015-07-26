@@ -18,7 +18,9 @@ func startMeter() {
 		rem := uint64(0)
 
 		tkr := time.NewTicker(time.Second)
-		tot := uint64(0)
+		sinceLast := uint64(0)
+
+		bytesSeen := false
 
 		for {
 			select {
@@ -26,19 +28,23 @@ func startMeter() {
 				rem = uint64(nz.Size())
 				size = float64(rem) / mbfloat
 			case n, more := <-meter:
+				bytesSeen = true
 				if !more {
 					return
 				}
-				tot += uint64(n)
+				sinceLast += uint64(n)
 			case <-tkr.C:
-				rem -= tot
+				if !bytesSeen {
+					break
+				}
+				rem -= sinceLast
 
-				r := float64(tot) / mbfloat
-				t := float64(rem) / float64(tot)
+				r := float64(sinceLast) / mbfloat
+				t := float64(rem) / float64(sinceLast)
 				rm := float64(rem) / mbfloat
 
 				fmt.Printf("%.4f MB/s, (%.1fMB/%.1fMB) %.2fs left\n", r, rm, size, t)
-				tot = uint64(0)
+				sinceLast = uint64(0)
 			}
 		}
 	}()
