@@ -47,8 +47,8 @@ func (i *Item) GetUrl() (string, error) {
 	q := url.Values{
 		"t":      {"get"},
 		"id":     {i.Attrs["guid"]},
-		"apikey": {data.Geek.ApiKey},
+		"apikey": {config.Geek.ApiKey},
 	}
 
-	return fmt.Sprintf("%s/api?%s", data.Geek.Url, q.Encode()), nil
+	return fmt.Sprintf("%s/api?%s", config.Geek.Url, q.Encode()), nil
 }

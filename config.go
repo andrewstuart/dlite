@@ -1,9 +1,12 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/andrewstuart/goapis"
 	"github.com/andrewstuart/nntp"
@@ -12,43 +15,60 @@ import (
 var geek *apis.Client
 var use *nntp.Client
 
-var data = struct {
-	Geek []struct {
+var config = struct {
+	Geek struct {
 		ApiKey, Url string
 	}
-	Usenet []struct {
+	Usenet struct {
 		Server, Username, Pass string
 		Port, Connections      int
+		Tls                    bool
 	}
 }{}
 
-const SecureUsenetPort = 563
+//Usenet well-known-ports
+const (
+	InsecureUsenetPort = 119
+	SecureUsenetPort   = 563
+)
 
 func connectApis() {
-	confFile := os.ExpandEnv("$HOME/.config/sab/config.yml")
-	file, err := os.Open(confFile)
+	confName := os.ExpandEnv("$HOME/.config/sab/config.yml")
+	confFile, err := os.Open(confName)
 
 	if err != nil {
-		log.Fatalf("Error opening config file:\n\t%v\n", err)
+		log.Fatalf("Error opening config confFile:\n\t%v\n", err)
 	}
 
-	dec := yaml.NewDecoder(file)
+	confData, err := ioutil.ReadAll(confFile)
+	if err != nil {
+		log.Fatalf("Error reading confFile:\n\t%v\n", err)
+	}
 
-	dec := json.NewDecoder(file)
-	dec.Decode(&data)
+	yaml.Unmarshal(confData, &config)
 
-	geek = apis.NewClient(data.Geek.Url)
+	if config.Usenet.Port == 0 {
+		if config.Usenet.Tls {
+			config.Usenet.Port = SecureUsenetPort
+		} else {
+			config.Usenet.Port = InsecureUsenetPort
+		}
+	}
+
+	geek = apis.NewClient(config.Geek.Url)
 	geek.DefaultQuery(apis.Query{
-		"apikey": data.Geek.ApiKey,
+		"apikey": config.Geek.ApiKey,
 		"limit":  "200",
 	})
 
-	use = nntp.NewClient(data.Usenet.Server, data.Usenet.Port)
-	use.Tls = data.Usenet.Port == SecureUsenetPort
-	use.SetMaxConns(data.Usenet.Connections)
-	err = use.Auth(data.Usenet.Username, data.Usenet.Pass)
+	use = nntp.NewClient(config.Usenet.Server, config.Usenet.Port)
+	use.Tls = config.Usenet.Tls
+	use.SetMaxConns(config.Usenet.Connections)
+	err = use.Auth(config.Usenet.Username, config.Usenet.Pass)
 
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Printf("config = %+v\n", config)
 }

@@ -38,6 +38,6 @@ func TestResp(t *testing.T) {
 	}
 
 	if m.Item[0].Attrs["guid"] != "5e82685f6ba186c3318e286025dbae35" {
-		fmt.Errorf("Wrong GUID obtained for item: %s", m.Item[0].Attrs["guid"])
+		t.Errorf("Wrong GUID obtained for item: %s", m.Item[0].Attrs["guid"])
 	}
 }
