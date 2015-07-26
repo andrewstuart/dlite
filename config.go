@@ -20,9 +20,9 @@ var config = struct {
 		ApiKey, Url string
 	}
 	Usenet struct {
-		Server, Username, Pass string
-		Port, Connections      int
-		Tls                    bool
+		Server, Username, Password string
+		Port, Connections          int
+		Tls                        bool
 	}
 }{}
 
@@ -65,7 +65,7 @@ func connectApis() {
 	use.Tls = config.Usenet.Tls
 	use.SetMaxConns(config.Usenet.Connections)
 
-	err = use.Auth(config.Usenet.Username, config.Usenet.Pass)
+	err = use.Auth(config.Usenet.Username, config.Usenet.Password)
 
 	if err != nil {
 		log.Fatal(err)
