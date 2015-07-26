@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -71,7 +70,6 @@ func connectApis() {
 	use = nntp.NewClient(config.Usenet.Server, config.Usenet.Port)
 	use.Tls = config.Usenet.Tls
 	use.SetMaxConns(config.Usenet.Connections)
-	use.SetTimeout(5 * time.Second)
 
 	err = use.Auth(config.Usenet.Username, config.Usenet.Password)
 
