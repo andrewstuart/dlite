@@ -56,7 +56,7 @@ func connectApis() {
 	}
 
 	geek = apis.NewClient(config.Geek.Url)
-	geek.DefaultQuery(apis.Query{
+	geek.DefaultParams(apis.Query{
 		"apikey": config.Geek.ApiKey,
 		"limit":  "200",
 	})
@@ -64,6 +64,7 @@ func connectApis() {
 	use = nntp.NewClient(config.Usenet.Server, config.Usenet.Port)
 	use.Tls = config.Usenet.Tls
 	use.SetMaxConns(config.Usenet.Connections)
+
 	err = use.Auth(config.Usenet.Username, config.Usenet.Pass)
 
 	if err != nil {
