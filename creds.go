@@ -13,10 +13,10 @@ var geek *apis.Client
 var use *nntp.Client
 
 var data = struct {
-	Geek struct {
+	Geek []struct {
 		ApiKey, Url string
 	}
-	Usenet struct {
+	Usenet []struct {
 		Server, Username, Pass string
 		Port, Connections      int
 	}
@@ -25,11 +25,14 @@ var data = struct {
 const SecureUsenetPort = 563
 
 func connectApis() {
-	file, err := os.Open("/home/andrew/creds.json")
+	confFile := os.ExpandEnv("$HOME/.config/sab/config.yml")
+	file, err := os.Open(confFile)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error opening config file:\n\t%v\n", err)
 	}
+
+	dec := yaml.NewDecoder(file)
 
 	dec := json.NewDecoder(file)
 	dec.Decode(&data)
