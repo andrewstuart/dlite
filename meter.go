@@ -19,12 +19,16 @@ func startMeter() {
 
 		tkr := time.NewTicker(time.Second)
 		tot := uint64(0)
+
 		for {
 			select {
 			case nz := <-currnz:
 				rem = uint64(nz.Size())
 				size = float64(rem) / mbfloat
-			case n := <-meter:
+			case n, more := <-meter:
+				if !more {
+					return
+				}
 				tot += uint64(n)
 			case <-tkr.C:
 				rem -= tot
@@ -38,4 +42,8 @@ func startMeter() {
 			}
 		}
 	}()
+}
+
+func closeMeter() {
+	close(meter)
 }

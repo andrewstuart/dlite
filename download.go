@@ -26,7 +26,7 @@ func Download(nz *nzb.NZB, dir string) error {
 		lmr.SimpleLimit(downRate, time.Second)
 	}
 
-	rar := make([]string, 0)
+	rarFiles := make([]string, 0)
 
 	tempDir := dir + "/temp"
 
@@ -58,7 +58,7 @@ func Download(nz *nzb.NZB, dir string) error {
 			fileSegs.Wait()
 
 			if IsRar(fName) {
-				rar = append(rar, fName)
+				rarFiles = append(rarFiles, fName)
 			}
 
 			var toFile *os.File
@@ -147,7 +147,6 @@ func Download(nz *nzb.NZB, dir string) error {
 				lmr.Manage(lr)
 
 				defer func() {
-					lmr.Unmanage(lr)
 					lr.Close()
 					closed <- true
 				}()
@@ -169,8 +168,13 @@ func Download(nz *nzb.NZB, dir string) error {
 	}
 
 	files.Wait()
+	closeMeter()
 
-	for _, fName := range rar {
+	if len(rarFiles) > 0 {
+		log.Println("Unrarring")
+	}
+
+	for _, fName := range rarFiles {
 		rErr := Unrar(fName, dir)
 
 		if rErr == nil {

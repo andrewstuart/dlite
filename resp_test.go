@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"git.astuart.co/andrew/apis"
+	"github.com/andrewstuart/goapis"
 )
 
 func TestResp(t *testing.T) {

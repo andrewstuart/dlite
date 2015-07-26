@@ -22,6 +22,8 @@ var data = struct {
 	}
 }{}
 
+const SecureUsenetPort = 563
+
 func connectApis() {
 	file, err := os.Open("/home/andrew/creds.json")
 
@@ -39,7 +41,8 @@ func connectApis() {
 	})
 
 	use = nntp.NewClient(data.Usenet.Server, data.Usenet.Port)
-	use.SetMaxConns(10)
+	use.Tls = data.Usenet.Port == SecureUsenetPort
+	use.SetMaxConns(data.Usenet.Connections)
 	err = use.Auth(data.Usenet.Username, data.Usenet.Pass)
 
 	if err != nil {
