@@ -7,9 +7,10 @@ import (
 	"github.com/andrewstuart/goapis"
 )
 
+//Search returns items for a type, query tuple.
 func Search(t, q string) ([]Item, error) {
 
-	qy := Query{t, q}
+	qy := query{t, q}
 	var is []Item
 
 	if cached, ok := localCache.Queries[qy]; ok && !*nc {
@@ -38,17 +39,17 @@ func Search(t, q string) ([]Item, error) {
 	return is, nil
 }
 
-func GetNzb(i Item) (*nzb.NZB, error) {
-	if n, ok := localCache.Nzbs[i.Guid]; ok {
+//GetNZB encapsulates the cache lookup and retrieval for an NZB
+func GetNZB(i Item) (*nzb.NZB, error) {
+	if n, ok := localCache.Nzbs[i.GUID]; ok {
 		return &n, nil
-	} else {
-
-		nz, err := i.GetNzb()
-
-		if nz != nil {
-			localCache.Nzbs[i.Guid] = *nz
-		}
-
-		return nz, err
 	}
+
+	nz, err := i.GetNzb()
+
+	if nz != nil {
+		localCache.Nzbs[i.GUID] = *nz
+	}
+
+	return nz, err
 }

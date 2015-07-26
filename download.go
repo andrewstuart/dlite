@@ -17,6 +17,8 @@ import (
 	"github.com/andrewstuart/yenc"
 )
 
+//Download will retrieve all the files for an NZB and extract them when
+//finished.
 func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
@@ -26,7 +28,7 @@ func Download(nz *nzb.NZB, dir string) error {
 		lmr.SimpleLimit(downRate, time.Second)
 	}
 
-	rarFiles := make([]string, 0)
+	var rarFiles []string
 
 	tempDir := dir + "/temp"
 

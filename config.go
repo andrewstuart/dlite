@@ -16,12 +16,12 @@ var use *nntp.Client
 
 var config = struct {
 	Geek struct {
-		ApiKey, Url string
+		APIKey, URL string
 	}
 	Usenet struct {
 		Server, Username, Password string
 		Port, Connections          int
-		Tls                        bool
+		TLS                        bool
 	}
 }{}
 
@@ -47,16 +47,16 @@ func connectApis() {
 	yaml.Unmarshal(confData, &config)
 
 	if config.Usenet.Port == 0 {
-		if config.Usenet.Tls {
+		if config.Usenet.TLS {
 			config.Usenet.Port = SecureUsenetPort
 		} else {
 			config.Usenet.Port = InsecureUsenetPort
 		}
 	}
 
-	geek = apis.NewClient(config.Geek.Url)
+	geek = apis.NewClient(config.Geek.URL)
 	geek.DefaultParams(apis.Query{
-		"apikey": config.Geek.ApiKey,
+		"apikey": config.Geek.APIKey,
 		"limit":  "200",
 	})
 
@@ -68,7 +68,7 @@ func connectApis() {
 	}
 
 	use = nntp.NewClient(config.Usenet.Server, config.Usenet.Port)
-	use.Tls = config.Usenet.Tls
+	use.Tls = config.Usenet.TLS
 	use.SetMaxConns(config.Usenet.Connections)
 
 	err = use.Auth(config.Usenet.Username, config.Usenet.Password)

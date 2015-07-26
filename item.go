@@ -9,15 +9,18 @@ import (
 	"github.com/andrewstuart/goapis"
 )
 
+//An Item is a representation of the items that NZBGeek returns in their search
+//results.
 type Item struct {
 	Description string `xml:"description"`
 	Title       string `xml:"title"`
 	Category    string `xml:"category"`
 	Link        string `xml:"link"`
-	Guid        string `xml:"guid"`
+	GUID        string `xml:"guid"`
 	Attrs       Attr   `xml:"attr"`
 }
 
+//GetNzb will retrieve the NZB from NZBGeek for any item.
 func (i *Item) GetNzb() (*nzb.NZB, error) {
 	if i.Attrs == nil || i.Attrs["guid"] == "" {
 		return nil, fmt.Errorf("No guid available for item")
@@ -39,7 +42,8 @@ func (i *Item) GetNzb() (*nzb.NZB, error) {
 	return z, nil
 }
 
-func (i *Item) GetUrl() (string, error) {
+//GetURL returns the url for the given item.
+func (i *Item) GetURL() (string, error) {
 	if i.Attrs == nil || i.Attrs["guid"] == "" {
 		return "", fmt.Errorf("No guid available for item")
 	}
@@ -47,8 +51,8 @@ func (i *Item) GetUrl() (string, error) {
 	q := url.Values{
 		"t":      {"get"},
 		"id":     {i.Attrs["guid"]},
-		"apikey": {config.Geek.ApiKey},
+		"apikey": {config.Geek.APIKey},
 	}
 
-	return fmt.Sprintf("%s/api?%s", config.Geek.Url, q.Encode()), nil
+	return fmt.Sprintf("%s/api?%s", config.Geek.URL, q.Encode()), nil
 }

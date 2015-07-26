@@ -2,8 +2,10 @@ package main
 
 import "encoding/xml"
 
+//Attr is a map of attribute to value
 type Attr map[string]string
 
+//UnmarshalXML encapsulates the unmarshal procedure for the Attr type.
 func (at *Attr) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	//Make sure map is initialized
 	if *at == nil {
@@ -29,6 +31,7 @@ func (at *Attr) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
+//A RespEnv is an envelope for an rss response.
 type RespEnv struct {
 	XMLName xml.Name `xml:"rss"`
 	Item    []Item   `xml:"channel>item"`

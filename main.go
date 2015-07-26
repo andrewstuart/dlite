@@ -18,7 +18,7 @@ func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
-type Query struct {
+type query struct {
 	T, Q string
 }
 
@@ -63,7 +63,7 @@ func main() {
 		n--
 
 		if 0 <= n && n < len(is) {
-			nz, err := GetNzb(is[n])
+			nz, err := GetNZB(is[n])
 
 			if err != nil {
 				log.Fatal(err)
