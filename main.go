@@ -9,8 +9,30 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"text/tabwriter"
+
+	"github.com/gorilla/mux"
 )
+
+type CORSRouter struct {
+	r       *mux.Router
+	methods []string
+	headers []string
+}
+
+func (cr CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if r.Method == "OPTIONS" {
+		h := w.Header()
+		h.Set("Access-Control-Allow-Origin", "*")
+		h.Set("Access-Control-Allow-Methods", strings.Join(cr.methods, ", "))
+		h.Set("Access-Control-Allow-Headers", strings.Join(cr.headers, ", "))
+		w.WriteHeader(200)
+		return
+	}
+	cr.r.ServeHTTP(w, r)
+}
 
 func init() {
 	connectApis()
@@ -24,6 +46,21 @@ type query struct {
 
 func main() {
 	defer saveCache(localCache)
+
+	if *serveAPI {
+		m := mux.NewRouter()
+		m.HandleFunc("/", HandleQuery)
+		m.HandleFunc("/downloads", HandleDownload)
+
+		rt := CORSRouter{
+			r:       m,
+			methods: []string{"POST", "GET", "PUT", "DELETE"},
+			headers: []string{"Content-Type"},
+		}
+
+		http.ListenAndServe(":9090", rt)
+		return
+	}
 
 	if *clr {
 		return

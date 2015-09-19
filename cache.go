@@ -30,15 +30,17 @@ func init() {
 
 	if *clr || err != nil {
 		localCache = &cache{
-			Queries: make(map[query][]Item),
-			Nzbs:    make(map[string]nzb.NZB),
+			Queries:     make(map[query][]Item),
+			Nzbs:        make(map[string]nzb.NZB),
+			ItemsByLink: make(map[string]*Item),
 		}
 	}
 }
 
 type cache struct {
-	Queries map[query][]Item
-	Nzbs    map[string]nzb.NZB
+	Queries     map[query][]Item
+	Nzbs        map[string]nzb.NZB
+	ItemsByLink map[string]*Item
 }
 
 func (c cache) query(t, q string) ([]Item, bool) {

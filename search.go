@@ -36,6 +36,10 @@ func Search(t, q string) ([]Item, error) {
 		localCache.Queries[qy] = is
 	}
 
+	for _, i := range is {
+		localCache.ItemsByLink[i.Link] = &i
+	}
+
 	return is, nil
 }
 

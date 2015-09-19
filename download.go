@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"strings"
 	"sync"
 	"time"
 
@@ -143,9 +142,7 @@ func Download(nz *nzb.NZB, dir string) error {
 					}
 				}()
 
-				if strings.Contains(file.Subject, "yEnc") {
-					r = yenc.NewReader(mr)
-				}
+				r = yenc.NewReader(mr)
 
 				// lr := limio.NewReader(r)
 				// lmr.Manage(lr)
@@ -161,7 +158,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				}
 
 				fileBufs[i] = tf
-				_, err = io.Copy(f, mr)
+				_, err = io.Copy(f, r)
 				// _, err = io.Copy(f, lr)
 
 				if err != nil {

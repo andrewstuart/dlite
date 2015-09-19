@@ -9,6 +9,7 @@ import (
 	"github.com/andrewstuart/limio"
 )
 
+var serveAPI = flag.Bool("serve", false, "serve the api")
 var searchType = flag.String("t", "movie", "the type of search to perform")
 var rateLimit = flag.String("r", "", "the rate limit")
 var nc = flag.Bool("nocache", false, "skip cache")

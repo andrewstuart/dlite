@@ -23,6 +23,9 @@ var config = struct {
 		Port, Connections          int
 		TLS                        bool
 	}
+	Downloads struct {
+		Dir string
+	}
 }{}
 
 //Usenet well-known-ports

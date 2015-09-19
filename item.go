@@ -12,12 +12,12 @@ import (
 //An Item is a representation of the items that NZBGeek returns in their search
 //results.
 type Item struct {
-	Description string `xml:"description"`
-	Title       string `xml:"title"`
-	Category    string `xml:"category"`
-	Link        string `xml:"link"`
-	GUID        string `xml:"guid"`
-	Attrs       Attr   `xml:"attr"`
+	Description string `xml:"description"json:"description"`
+	Title       string `xml:"title"json:"title"`
+	Category    string `xml:"category"json:"category"`
+	Link        string `xml:"link"json:"link"`
+	GUID        string `xml:"guid"json:"guid"`
+	Attrs       Attr   `xml:"attr"json:"attrs"`
 }
 
 //GetNzb will retrieve the NZB from NZBGeek for any item.
