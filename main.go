@@ -38,6 +38,8 @@ func init() {
 	connectApis()
 	go http.ListenAndServe(":6060", nil)
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	log.Println(config)
 }
 
 type query struct {

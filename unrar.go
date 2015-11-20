@@ -14,6 +14,6 @@ func IsRar(fName string) bool {
 //Unrar executes an external command to "unrar" given a filename and extract
 //path
 func Unrar(file, path string) error {
-	cmd := exec.Command("unrar", "e", file, path)
+	cmd := exec.Command("unrar", "x", file, path)
 	return cmd.Run()
 }

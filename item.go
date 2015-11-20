@@ -35,9 +35,8 @@ func (i *Item) GetNzb() (*nzb.NZB, error) {
 		return nil, err
 	}
 
-	dec := xml.NewDecoder(res.Body)
 	z := &nzb.NZB{}
-	dec.Decode(z)
+	xml.NewDecoder(res.Body).Decode(z)
 
 	return z, nil
 }

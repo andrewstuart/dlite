@@ -28,7 +28,7 @@ var config = struct {
 	}
 }{}
 
-//Usenet well-known-ports
+//Usenet well-known ports
 const (
 	InsecureUsenetPort = 119
 	SecureUsenetPort   = 563

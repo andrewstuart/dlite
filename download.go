@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"sync"
-	"time"
 
-	"github.com/andrewstuart/go-metio"
 	"github.com/andrewstuart/go-nzb"
+	"github.com/andrewstuart/nntp"
 	"github.com/andrewstuart/yenc"
 )
 
@@ -20,11 +20,6 @@ import (
 func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
-
-	// lmr := limio.NewSimpleManager()
-	// if downRate > 0 {
-	// 	lmr.SimpleLimit(downRate, time.Second)
-	// }
 
 	var rarFiles []string
 
@@ -55,39 +50,38 @@ func Download(nz *nzb.NZB, dir string) error {
 
 		//Write to disk
 		go func() {
+			defer files.Done()
+
 			fileSegs.Wait()
 
 			if IsRar(fName) {
 				rarFiles = append(rarFiles, fName)
 			}
 
-			var toFile *os.File
-			toFile, err = os.Create(fName)
+			toFile, err := os.Create(fName)
 			defer toFile.Close()
 
 			if err != nil {
 				log.Println("Couldn't create file.")
-				files.Done()
 				return
 			}
 
 			for i := range fileBufs {
-				f, err := os.Open(fileBufs[i])
+				var f *os.File
+				f, err = os.Open(fileBufs[i])
 				defer f.Close()
 				defer os.Remove(fileBufs[i])
 
 				if err != nil {
-					log.Fatal(err)
+					return
 				}
 
 				_, err = io.Copy(toFile, f)
 
 				if err != nil {
-					log.Fatal(err)
+					return
 				}
 			}
-
-			files.Done()
 		}()
 
 		//Get from network
@@ -98,15 +92,17 @@ func Download(nz *nzb.NZB, dir string) error {
 
 				tf := path.Clean(fmt.Sprintf("%s/temp/%s", dir, seg.Id))
 
+				var f os.FileInfo
 				//Check to see if file segment has been previously downloaded completely
 				//That is, it exists and has the proper size.
-				if f, err := os.Stat(tf); err == nil && f.Size() == int64(seg.Bytes) {
-					meter <- seg.Bytes
+				if f, err = os.Stat(tf); err == nil && f.Size() == int64(seg.Bytes) {
+					// meter <- seg.Bytes
 					fileBufs[i] = tf
 					return
 				}
 
-				art, err := use.GetArticle(file.Groups[0], html.UnescapeString(seg.Id))
+				var art *nntp.Response
+				art, err = use.GetArticle(file.Groups[0], html.UnescapeString(seg.Id))
 
 				if err != nil {
 					log.Printf("error downloading file %s: %v\n", file.Subject, err)
@@ -121,44 +117,18 @@ func Download(nz *nzb.NZB, dir string) error {
 				var r io.Reader = art.Body
 				defer art.Body.Close()
 
-				mr := metio.NewReader(r)
-				closed := make(chan bool)
-				defer func() {
-					closed <- true
-				}()
+				r = yenc.NewReader(r)
 
-				go func() {
-					for {
-						t := time.Now()
-						select {
-						case <-time.After(time.Second):
-							n, _ := mr.Since(t)
-							meter <- n
-						case <-closed:
-							n, _ := mr.Since(t)
-							meter <- n
-							return
-						}
-					}
-				}()
-
-				r = yenc.NewReader(mr)
-
-				// lr := limio.NewReader(r)
-				// lmr.Manage(lr)
-
-				// defer func() {
-				// 	lr.Close()
-				// }()
-
-				f, err := os.Create(tf)
+				var destF *os.File
+				destF, err = os.Create(tf)
+				defer destF.Close()
 
 				if err != nil {
-					log.Fatal(err)
+					return
 				}
 
 				fileBufs[i] = tf
-				_, err = io.Copy(f, r)
+				_, err = io.Copy(destF, r)
 				// _, err = io.Copy(f, lr)
 
 				if err != nil {
@@ -169,17 +139,24 @@ func Download(nz *nzb.NZB, dir string) error {
 	}
 
 	files.Wait()
-	closeMeter()
 
 	if len(rarFiles) > 0 {
 		log.Println("Unrarring")
 	}
 
 	for _, fName := range rarFiles {
+		files, _ := ioutil.ReadDir(dir)
+
 		rErr := Unrar(fName, dir)
 
 		if rErr == nil {
-			os.Remove(fName)
+			for fi := range files {
+				fdir := dir + "/" + files[fi].Name()
+				err := os.Remove(fdir)
+				if err != nil {
+					log.Println("Error removing file", fdir, err)
+				}
+			}
 		}
 	}
 

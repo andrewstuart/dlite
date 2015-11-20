@@ -12,6 +12,7 @@ import (
 
 func HandleQuery(w http.ResponseWriter, r *http.Request) {
 	v := r.URL.Query()
+	w.Header().Set("Content-Type", "application/json")
 
 	is, err := Search(v.Get("type"), v.Get("q"))
 	if err != nil {
@@ -29,8 +30,10 @@ type dlQuery struct {
 
 func HandleDownload(w http.ResponseWriter, r *http.Request) {
 	l := dlQuery{}
+	w.Header().Set("Content-Type", "application/json")
 
 	err := json.NewDecoder(r.Body).Decode(&l)
+	defer r.Body.Close()
 
 	if err != nil {
 		w.WriteHeader(400)
@@ -63,6 +66,8 @@ func HandleDownload(w http.ResponseWriter, r *http.Request) {
 			if config.Downloads.Dir != "" {
 				dlDir = config.Downloads.Dir
 			}
+
+			log.Println("Downloading", nzb.Meta)
 
 			err = Download(nzb, fmt.Sprintf("%s/%s", dlDir, item.Title))
 			if err != nil {
