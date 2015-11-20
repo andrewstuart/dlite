@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html"
 	"io"
@@ -118,14 +119,29 @@ func Download(nz *nzb.NZB, dir string) error {
 					return
 				}
 
-				var r io.Reader = art.Body
-				defer art.Body.Close()
-
 				mr := metio.NewReader(art.Body)
 				group.Add(mr)
-				defer group.Remove(mr)
+				bs, err := ioutil.ReadAll(mr)
 
-				r = yenc.NewReader(mr)
+				group.Remove(mr)
+				art.Body.Close()
+
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				bs, err = ioutil.ReadAll(metio.NewReader(bytes.NewBuffer(bs)))
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				bs, err = ioutil.ReadAll(yenc.NewReader(bytes.NewBuffer(bs)))
+				if err != nil {
+					log.Println(err)
+					return
+				}
 
 				var destF *os.File
 				destF, err = os.Create(tf)
@@ -136,8 +152,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				}
 
 				fileBufs[i] = tf
-				_, err = io.Copy(destF, r)
-				// _, err = io.Copy(f, lr)
+				_, err = io.Copy(destF, bytes.NewBuffer(bs))
 
 				if err != nil {
 					log.Printf("There was an error reading the article body: %v\n", err)
