@@ -10,6 +10,7 @@ import (
 	"path"
 	"sync"
 
+	"github.com/andrewstuart/go-metio"
 	"github.com/andrewstuart/go-nzb"
 	"github.com/andrewstuart/nntp"
 	"github.com/andrewstuart/yenc"
@@ -30,6 +31,9 @@ func Download(nz *nzb.NZB, dir string) error {
 	if err != nil {
 		return err
 	}
+
+	group := metio.NewReaderGroup()
+	go meter(nz, group)
 
 	for n := range nz.Files {
 		num := n
@@ -117,7 +121,11 @@ func Download(nz *nzb.NZB, dir string) error {
 				var r io.Reader = art.Body
 				defer art.Body.Close()
 
-				r = yenc.NewReader(r)
+				mr := metio.NewReader(art.Body)
+				group.Add(mr)
+				defer group.Remove(mr)
+
+				r = yenc.NewReader(mr)
 
 				var destF *os.File
 				destF, err = os.Create(tf)

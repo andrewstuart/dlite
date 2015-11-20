@@ -112,9 +112,6 @@ func main() {
 				dlDir = sabDir
 			}
 
-			startMeter()
-			currnz <- nz
-
 			err = Download(nz, fmt.Sprintf("%s/%s", dlDir, is[n].Title))
 
 			if err != nil {
