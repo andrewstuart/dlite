@@ -61,5 +61,5 @@ _testmain.go
 build.sh
 
 dlite
-profile
+profile*
 dlite.test
