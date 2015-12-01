@@ -94,7 +94,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				defer fileSegs.Done()
 				seg := file.Segments[i]
 
-				tf := path.Clean(fmt.Sprintf("%s/temp/%s", dir, seg.Id))
+				tf := path.Clean(fmt.Sprintf("%s/temp/%s", dir, seg.ID))
 
 				var f os.FileInfo
 				//Check to see if file segment has been previously downloaded completely
@@ -106,7 +106,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				}
 
 				var art *nntp.Response
-				art, err = use.GetArticle(file.Groups[0], html.UnescapeString(seg.Id))
+				art, err = use.GetArticle(file.Groups[0], html.UnescapeString(seg.ID))
 
 				if err != nil {
 					log.Printf("error downloading file %s: %v\n", file.Subject, err)
