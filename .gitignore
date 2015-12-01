@@ -59,3 +59,7 @@ _testmain.go
 *.prof
 
 build.sh
+
+dlite
+profile
+dlite.test
