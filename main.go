@@ -49,8 +49,6 @@ type query struct {
 func main() {
 	defer saveCache(localCache)
 
-	go http.ListenAndServe(":8088", nil)
-
 	if *serveAPI {
 		m := mux.NewRouter()
 		m.HandleFunc("/", HandleQuery)
