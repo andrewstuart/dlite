@@ -1,0 +1,12 @@
+# Place this file at the following path: $HOME/.config/sab/config.yml
+usenet:
+  server: 'news.usenetserver.com'
+  tls: true
+  connections: 20
+  username: 'myusername'
+  password: 'mypassword'
+geek:
+  url: 'https://api.nzbgeek.info'
+  apikey: 'someapikey'
+downloads:
+  dir: '/home/andrew/Downloads/'
