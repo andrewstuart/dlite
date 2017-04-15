@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/xml"
 
-	"github.com/andrewstuart/go-nzb"
-	"github.com/andrewstuart/goapis"
+	nzb "astuart.co/go-nzb"
+	apis "astuart.co/goapis"
 )
 
 //Search returns items for a type, query tuple.

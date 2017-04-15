@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/andrewstuart/go-nzb"
+	nzb "astuart.co/go-nzb"
 )
 
 func HandleQuery(w http.ResponseWriter, r *http.Request) {

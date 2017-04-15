@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	"gopkg.in/yaml.v2"
+	apis "astuart.co/goapis"
+	"astuart.co/nntp"
 
-	"github.com/andrewstuart/goapis"
-	"github.com/andrewstuart/nntp"
+	"gopkg.in/yaml.v2"
 )
 
 var geek *apis.Client

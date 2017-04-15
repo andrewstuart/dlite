@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/andrewstuart/go-metio"
-	"github.com/andrewstuart/go-nzb"
+	metio "astuart.co/go-metio"
+	nzb "astuart.co/go-nzb"
 )
 
 const mbFloat = float64(1 << 20)

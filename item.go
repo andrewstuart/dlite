@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/andrewstuart/go-nzb"
-	"github.com/andrewstuart/goapis"
+	nzb "astuart.co/go-nzb"
+	apis "astuart.co/goapis"
 )
 
 //An Item is a representation of the items that NZBGeek returns in their search

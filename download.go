@@ -10,10 +10,10 @@ import (
 	"path"
 	"sync"
 
-	"github.com/andrewstuart/go-metio"
-	"github.com/andrewstuart/go-nzb"
-	"github.com/andrewstuart/nntp"
-	"github.com/andrewstuart/yenc"
+	metio "astuart.co/go-metio"
+	nzb "astuart.co/go-nzb"
+	"astuart.co/nntp"
+	"astuart.co/yenc"
 )
 
 //Download will retrieve all the files for an NZB and extract them when
