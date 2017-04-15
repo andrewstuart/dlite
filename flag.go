@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/andrewstuart/limio"
+	"astuart.co/limio"
 )
 
 var serveAPI = flag.Bool("serve", false, "serve the api")
