@@ -26,6 +26,7 @@ var config = struct {
 	Downloads struct {
 		Dir string
 	}
+	Filter []string
 }{}
 
 //Usenet well-known ports

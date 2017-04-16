@@ -14,7 +14,7 @@ func HandleQuery(w http.ResponseWriter, r *http.Request) {
 	v := r.URL.Query()
 	w.Header().Set("Content-Type", "application/json")
 
-	is, err := Search(v.Get("type"), v.Get("q"))
+	is, err := Search(SearchOptions{Type: v.Get("type"), Query: v.Get("q")})
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(500)

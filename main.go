@@ -75,7 +75,7 @@ func main() {
 		return
 	}
 
-	is, err := Search(*searchType, args[0])
+	is, err := Search(SearchOptions{Type: *searchType, Query: args[0], Filter: config.Filter})
 	if err != nil {
 		log.Fatal(err)
 	}

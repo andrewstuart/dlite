@@ -3,15 +3,22 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
+	"strings"
 
 	nzb "astuart.co/go-nzb"
 	apis "astuart.co/goapis"
 )
 
-//Search returns items for a type, query tuple.
-func Search(t, q string) ([]Item, error) {
+type SearchOptions struct {
+	Type   string
+	Query  string
+	Filter []string
+}
 
-	qy := query{t, q}
+//Search returns items for a type, query tuple.
+func Search(opt SearchOptions) ([]Item, error) {
+
+	qy := query{T: opt.Type, Q: opt.Query}
 	var is []Item
 
 	if cached, ok := localCache.Queries[qy]; ok && !*nc {
@@ -24,8 +31,8 @@ func Search(t, q string) ([]Item, error) {
 
 		for len(is) < *num {
 			res, err := geek.Get("api", apis.Query{
-				"t":      t,
-				"q":      q,
+				"t":      opt.Type,
+				"q":      opt.Query,
 				"offset": fmt.Sprint(o),
 			})
 
@@ -39,7 +46,17 @@ func Search(t, q string) ([]Item, error) {
 			if err != nil {
 				return is, err
 			}
-			is = append(is, m.Item...)
+
+		itemFilterLoop:
+			for _, item := range m.Item {
+				for _, filter := range opt.Filter {
+					if strings.Contains(item.Title, filter) {
+						continue itemFilterLoop
+					}
+				}
+				is = append(is, item)
+			}
+
 			o += len(is)
 		}
 
