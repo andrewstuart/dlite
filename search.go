@@ -19,15 +19,13 @@ type SearchOptions struct {
 func Search(opt SearchOptions) ([]Item, error) {
 
 	qy := query{T: opt.Type, Q: opt.Query}
-	var is []Item
+	is := []Item{}
 
 	if cached, ok := localCache.Queries[qy]; ok && !*nc {
 		is = cached
 	} else {
 
 		o := 0
-
-		is := []Item{}
 
 		for len(is) < *num {
 			res, err := geek.Get("api", apis.Query{
@@ -62,9 +60,11 @@ func Search(opt SearchOptions) ([]Item, error) {
 
 		localCache.Queries[qy] = is
 	}
+
 	for i := range is {
 		localCache.ItemsByLink[is[i].Link] = &is[i]
 	}
+
 	return is, nil
 }
 
