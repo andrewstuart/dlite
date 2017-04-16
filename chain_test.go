@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/andrewstuart/nntp"
-	"github.com/andrewstuart/yenc"
+	"astuart.co/nntp"
+	"astuart.co/yenc"
 )
 
 func BenchmarkChain(b *testing.B) {

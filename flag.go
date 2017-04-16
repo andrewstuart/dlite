@@ -9,11 +9,14 @@ import (
 	"astuart.co/limio"
 )
 
-var serveAPI = flag.Bool("serve", false, "serve the api")
-var searchType = flag.String("t", "movie", "the type of search to perform")
-var rateLimit = flag.String("r", "", "the rate limit")
-var nc = flag.Bool("nocache", false, "skip cache")
-var clr = flag.Bool("clear", false, "clear cache")
+var (
+	serveAPI   = flag.Bool("serve", false, "serve the api")
+	searchType = flag.String("t", "movie", "the type of search to perform")
+	rateLimit  = flag.String("r", "", "the rate limit")
+	nc         = flag.Bool("nocache", false, "skip cache")
+	clr        = flag.Bool("clear", false, "clear cache")
+	num        = flag.Int("n", 100, "number to download")
+)
 
 var downRate int
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"fmt"
 
 	nzb "astuart.co/go-nzb"
 	apis "astuart.co/goapis"
@@ -17,29 +18,36 @@ func Search(t, q string) ([]Item, error) {
 		is = cached
 	} else {
 
-		res, err := geek.Get("api", apis.Query{
-			"t": t,
-			"q": q,
-		})
-		if err != nil {
-			return nil, err
+		o := 0
+
+		is := []Item{}
+
+		for len(is) < *num {
+			res, err := geek.Get("api", apis.Query{
+				"t":      t,
+				"q":      q,
+				"offset": fmt.Sprint(o),
+			})
+
+			if err != nil {
+				return is, err
+			}
+
+			dec := xml.NewDecoder(res.Body)
+			m := RespEnv{}
+			err = dec.Decode(&m)
+			if err != nil {
+				return is, err
+			}
+			is = append(is, m.Item...)
+			o += len(is)
 		}
 
-		dec := xml.NewDecoder(res.Body)
-		m := RespEnv{}
-		err = dec.Decode(&m)
-		if err != nil {
-			return nil, err
-		}
-
-		is = m.Item
 		localCache.Queries[qy] = is
 	}
-
 	for i := range is {
 		localCache.ItemsByLink[is[i].Link] = &is[i]
 	}
-
 	return is, nil
 }
 

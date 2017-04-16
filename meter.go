@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"time"
 
 	metio "astuart.co/go-metio"
@@ -18,7 +18,7 @@ func meter(nz *nzb.NZB, r metio.Meterer) {
 		case t := <-tkr.C:
 			since := t.Add(-time.Second)
 			bytes, _ := r.Since(since)
-			log.Printf("%fMB/s\n", float64(bytes)/mbFloat)
+			fmt.Printf("\r%fMB/s", float64(bytes)/mbFloat)
 		}
 	}
 }

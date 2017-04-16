@@ -74,7 +74,6 @@ func Download(nz *nzb.NZB, dir string) error {
 				var f *os.File
 				f, err = os.Open(fileBufs[i])
 				defer f.Close()
-				defer os.Remove(fileBufs[i])
 
 				if err != nil {
 					return
@@ -97,11 +96,11 @@ func Download(nz *nzb.NZB, dir string) error {
 				tf := path.Clean(fmt.Sprintf("%s/temp/%s", dir, seg.ID))
 
 				var f os.FileInfo
+				fileBufs[i] = tf
+
 				//Check to see if file segment has been previously downloaded completely
 				//That is, it exists and has the proper size.
 				if f, err = os.Stat(tf); err == nil && f.Size() == int64(seg.Bytes) {
-					// meter <- seg.Bytes
-					fileBufs[i] = tf
 					return
 				}
 
@@ -118,29 +117,26 @@ func Download(nz *nzb.NZB, dir string) error {
 					return
 				}
 
-				var r io.Reader = art.Body
 				defer art.Body.Close()
-
 				mr := metio.NewReader(art.Body)
+
 				group.Add(mr)
 				defer group.Remove(mr)
 
-				r = yenc.NewReader(mr)
+				r := yenc.NewReader(mr)
 
 				var destF *os.File
 				destF, err = os.Create(tf)
-				defer destF.Close()
-
 				if err != nil {
 					return
 				}
 
-				fileBufs[i] = tf
-				_, err = io.Copy(destF, r)
-				// _, err = io.Copy(f, lr)
+				defer destF.Close()
+
+				_, err := io.Copy(destF, r)
 
 				if err != nil {
-					log.Printf("There was an error reading the article body: %v\n", err)
+					log.Printf("There was an error reading the article body for %q: %v\n", tf, err)
 				}
 			}(i)
 		}
