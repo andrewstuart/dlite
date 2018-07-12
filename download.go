@@ -10,7 +10,6 @@ import (
 	"path"
 	"sync"
 
-	metio "astuart.co/go-metio"
 	nzb "astuart.co/go-nzb"
 	"astuart.co/nntp"
 	"astuart.co/yenc"
@@ -31,9 +30,6 @@ func Download(nz *nzb.NZB, dir string) error {
 	if err != nil {
 		return err
 	}
-
-	group := metio.NewReaderGroup()
-	go meter(nz, group)
 
 	for n := range nz.Files {
 		num := n
@@ -90,6 +86,13 @@ func Download(nz *nzb.NZB, dir string) error {
 		//Get from network
 		for i := range file.Segments {
 			go func(i int) {
+				defer func() {
+					err := recover()
+					if err != nil {
+						fmt.Println(err)
+					}
+				}()
+
 				defer fileSegs.Done()
 				seg := file.Segments[i]
 
@@ -118,12 +121,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				}
 
 				defer art.Body.Close()
-				mr := metio.NewReader(art.Body)
-
-				group.Add(mr)
-				defer group.Remove(mr)
-
-				r := yenc.NewReader(mr)
+				r := yenc.NewReader(art.Body)
 
 				var destF *os.File
 				destF, err = os.Create(tf)
