@@ -16,6 +16,7 @@ var (
 	nc         = flag.Bool("nocache", false, "skip cache")
 	clr        = flag.Bool("clear", false, "clear cache")
 	num        = flag.Int("n", 100, "number to download")
+	nzbLink    = flag.String("l", "", "url to an nzb")
 )
 
 var downRate int

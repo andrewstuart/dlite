@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	nzb "astuart.co/go-nzb"
 	"github.com/gorilla/mux"
 
 	_ "net/http/pprof"
@@ -64,7 +66,33 @@ func main() {
 		return
 	}
 
-	if *clr {
+	dlDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if sabDir := os.Getenv("SAB_DIR"); sabDir != "" {
+		dlDir = sabDir
+	}
+
+	switch {
+	case *clr:
+		return
+	case *nzbLink != "":
+		res, err := http.Get(*nzbLink)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		nz := &nzb.NZB{}
+		err = xml.NewDecoder(res.Body).Decode(nz)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err = Download(nz, dlDir); err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 
