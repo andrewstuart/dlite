@@ -9,7 +9,6 @@ import (
 	"path"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 
 	nzb "astuart.co/go-nzb"
@@ -24,7 +23,7 @@ func rename(s string) string {
 	if len(p) > 1 {
 		i, err := strconv.Atoi(p[1])
 		if err == nil && i > 9 {
-			return strings.Replace(s, "0"+p[1], p[1], -1)
+			return re.ReplaceAllString(s, p[1]+".rar")
 		}
 	}
 	return s

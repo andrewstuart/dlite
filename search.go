@@ -15,7 +15,7 @@ type SearchOptions struct {
 	Filter []string
 }
 
-//Search returns items for a type, query tuple.
+// Search returns items for a type, query tuple.
 func Search(opt SearchOptions) ([]Item, error) {
 
 	qy := query{T: opt.Type, Q: opt.Query}
@@ -68,7 +68,7 @@ func Search(opt SearchOptions) ([]Item, error) {
 	return is, nil
 }
 
-//GetNZB encapsulates the cache lookup and retrieval for an NZB
+// GetNZB encapsulates the cache lookup and retrieval for an NZB
 func GetNZB(i Item) (*nzb.NZB, error) {
 	if n, ok := localCache.Nzbs[i.GUID]; ok {
 		return &n, nil

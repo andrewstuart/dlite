@@ -29,7 +29,7 @@ var config = struct {
 	Filter []string
 }{}
 
-//Usenet well-known ports
+// Usenet well-known ports
 const (
 	InsecureUsenetPort = 119
 	SecureUsenetPort   = 563
@@ -61,7 +61,7 @@ func connectApis() {
 	geek = apis.NewClient(config.Geek.URL)
 	geek.DefaultParams(apis.Query{
 		"apikey": config.Geek.APIKey,
-		"limit":  "200",
+		"limit":  "100",
 	})
 
 	if config.Usenet.Server == "" {
