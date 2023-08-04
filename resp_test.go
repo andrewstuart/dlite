@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/xml"
-	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	apis "astuart.co/goapis"
@@ -12,7 +13,7 @@ import (
 
 func TestResp(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, testResp)
+		io.Copy(w, strings.NewReader(testResp))
 	}))
 
 	defer ts.Close()

@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 
 	nzb "astuart.co/go-nzb"
@@ -15,8 +17,21 @@ import (
 	"astuart.co/yenc"
 )
 
-//Download will retrieve all the files for an NZB and extract them when
-//finished.
+var re = regexp.MustCompile("0(\\d+).rar$")
+
+func rename(s string) string {
+	p := re.FindStringSubmatch(s)
+	if len(p) > 1 {
+		i, err := strconv.Atoi(p[1])
+		if err == nil && i > 9 {
+			return strings.Replace(s, "0"+p[1], p[1], -1)
+		}
+	}
+	return s
+}
+
+// Download will retrieve all the files for an NZB and extract them when
+// finished.
 func Download(nz *nzb.NZB, dir string) error {
 	files := &sync.WaitGroup{}
 	files.Add(len(nz.Files))
@@ -45,6 +60,8 @@ func Download(nz *nzb.NZB, dir string) error {
 		if err != nil {
 			name = fmt.Sprintf("file-%d", num)
 		}
+
+		name = rename(name)
 
 		fName := path.Clean(fmt.Sprintf("%s/%s", dir, name))
 
@@ -126,6 +143,7 @@ func Download(nz *nzb.NZB, dir string) error {
 				var destF *os.File
 				destF, err = os.Create(tf)
 				if err != nil {
+					log.Println("Error creating file: ", err)
 					return
 				}
 
@@ -143,24 +161,26 @@ func Download(nz *nzb.NZB, dir string) error {
 	files.Wait()
 
 	if len(rarFiles) > 0 {
-		log.Println("Unrarring")
+		log.Println("Unrarring to " + dir)
+		Unrar(rarFiles[0], dir)
 	}
 
-	for _, fName := range rarFiles {
-		files, _ := ioutil.ReadDir(dir)
+	// for _, fName := range rarFiles {
+	// 	// files, _ := ioutil.ReadDir(dir)
 
-		rErr := Unrar(fName, dir)
+	// 	Unrar(fName, dir)
+	// 	// rErr := Unrar(fName, dir)
 
-		if rErr == nil {
-			for fi := range files {
-				fdir := dir + "/" + files[fi].Name()
-				err := os.Remove(fdir)
-				if err != nil {
-					log.Println("Error removing file", fdir, err)
-				}
-			}
-		}
-	}
+	// 	// if rErr == nil {
+	// 	// 	for fi := range files {
+	// 	// 		fdir := dir + "/" + files[fi].Name()
+	// 	// 		err := os.Remove(fdir)
+	// 	// 		if err != nil {
+	// 	// 			log.Println("Error removing file", fdir, err)
+	// 	// 		}
+	// 	// 	}
+	// 	// }
+	// }
 
 	os.RemoveAll(tempDir)
 

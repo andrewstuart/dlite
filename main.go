@@ -8,7 +8,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -41,7 +40,6 @@ func (cr CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func init() {
 	connectApis()
 	go http.ListenAndServe(":6060", nil)
-	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
 type query struct {
