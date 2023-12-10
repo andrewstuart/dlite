@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -43,7 +43,7 @@ func connectApis() {
 		log.Fatalf("Error opening config confFile:\n\t%v\n", err)
 	}
 
-	confData, err := ioutil.ReadAll(confFile)
+	confData, err := io.ReadAll(confFile)
 	if err != nil {
 		log.Fatalf("Error reading confFile:\n\t%v\n", err)
 	}
